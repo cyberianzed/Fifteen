@@ -73,6 +73,16 @@ fun SettingsScreen(store: Store, platform: PlatformUi, wide: Boolean) {
             }
         }
         Spacer(Modifier.height(24.dp))
+        Card(Modifier.fillMaxWidth()) {
+            Column {
+                SectionTitle("Add-ons")
+                Toggle(
+                    "Add-ons", db.profile.addons,
+                    "Eye breaks (20-20-20), water reminders and friendly check-ins from your companion. Adds an Add-ons tab (a small + on phones).",
+                ) { on -> store.updateProfile { it.copy(addons = on) } }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { Column { platform.PlatformSettings() } }
         Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { SyncSettings(store) }

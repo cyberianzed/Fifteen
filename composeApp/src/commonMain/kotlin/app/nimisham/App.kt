@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,26 +56,30 @@ interface PlatformUi {
     fun PlatformSettings()
 }
 
-enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Garden("Garden"), Settings("Settings") }
+enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Addons("Add-ons"), Garden("Garden"), Settings("Settings") }
 
 @Composable
 fun NimishamApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     var focusMode by remember { mutableStateOf(false) }
     LaunchedEffect(focusMode) { platform.keepScreenOn(focusMode) }
+    val db by store.db.collectAsState()
+    val addons = db.profile.addons
+    // The Add-ons tab exists only while add-ons are switched on in Settings.
+    if (!addons && tab == Tab.Addons) tab = Tab.Now
     NimishamTheme {
         Box(Modifier.fillMaxSize().background(Ink.bg)) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val wide = maxWidth >= 860.dp
                 if (wide) {
                     Row(Modifier.fillMaxSize()) {
-                        NavRail(tab) { tab = it }
+                        NavRail(tab, addons) { tab = it }
                         Box(Modifier.weight(1f).fillMaxHeight()) { TabContent(tab, store, platform, wide = true) { focusMode = true } }
                     }
                 } else {
                     Column(Modifier.fillMaxSize().statusBarsPadding()) {
                         Box(Modifier.weight(1f)) { TabContent(tab, store, platform, wide = false) { focusMode = true } }
-                        BottomNav(tab) { tab = it }
+                        BottomNav(tab, addons) { tab = it }
                     }
                 }
             }
@@ -88,6 +94,7 @@ private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boole
         when (t) {
             Tab.Now -> NowScreen(store, platform, wide, onFocus)
             Tab.Insights -> InsightsScreen(store, wide)
+            Tab.Addons -> AddonsScreen(store, wide)
             Tab.Garden -> GardenScreen(store, wide)
             Tab.Settings -> SettingsScreen(store, platform, wide)
         }
@@ -95,12 +102,12 @@ private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boole
 }
 
 @Composable
-private fun NavRail(tab: Tab, onTab: (Tab) -> Unit) {
+private fun NavRail(tab: Tab, addons: Boolean, onTab: (Tab) -> Unit) {
     Column(Modifier.width(196.dp).fillMaxHeight().padding(start = 28.dp, top = 36.dp, bottom = 28.dp)) {
         Text("nimisham", color = Ink.text, fontSize = 20.sp, fontWeight = FontWeight.Light, letterSpacing = 0.5.sp)
         Text("നിമിഷം", color = Ink.faint, fontSize = 12.sp)
         Spacer(Modifier.height(44.dp))
-        for (t in Tab.entries) {
+        for (t in Tab.entries.filter { it != Tab.Addons || addons }) {
             val sel = t == tab
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onTab(t) }.padding(vertical = 11.dp, horizontal = 4.dp),
@@ -115,13 +122,27 @@ private fun NavRail(tab: Tab, onTab: (Tab) -> Unit) {
 }
 
 @Composable
-private fun BottomNav(tab: Tab, onTab: (Tab) -> Unit) {
+private fun BottomNav(tab: Tab, addons: Boolean, onTab: (Tab) -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Ink.bg).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        for (t in Tab.entries) {
+        for (t in Tab.entries.filter { it != Tab.Addons || addons }) {
             val sel = t == tab
+            if (t == Tab.Addons) {
+                // A small "+" in the middle instead of a full label, so the bar stays as calm as before.
+                Box(
+                    Modifier.size(30.dp).clip(CircleShape)
+                        .background(if (sel) Ink.mellow else Color.Transparent)
+                        .border(1.dp, if (sel) Ink.mellow else Color(0x33FFFFFF), CircleShape)
+                        .clickable { onTab(t) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("+", color = if (sel) Color(0xFF16130A) else Ink.muted, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                }
+                continue
+            }
             Column(
                 Modifier.clip(RoundedCornerShape(14.dp)).clickable { onTab(t) }.padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

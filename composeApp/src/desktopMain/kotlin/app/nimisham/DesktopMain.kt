@@ -79,6 +79,7 @@ fun main(args: Array<String>) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val store = Store(DirTextFiles(dir), scope)
     scope.launch { store.syncLoop { 5_000 } }
+    scope.launch { store.nudges.loop() }
     Runtime.getRuntime().addShutdownHook(Thread { store.flush() })
     if (store.prefs.value.autostart) Autostart.set(true)
 
@@ -161,6 +162,9 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
 
     if (prefs.showBar) FloatingBar(store, v, prefs, onOpen = { if (v.phase == Phase.Running) mainOpen = true else checkInOpen = true })
 
+    // Add-on chat: a bubble window next to the floating bar (or the top-right corner when the bar is hidden).
+    if (store.nudges.visible(v.db, prefs)) BubbleWindow(store, if (prefs.showBar) barBounds.value else null)
+
     if (checkInOpen) {
         val state = rememberWindowState(size = DpSize(640.dp, 760.dp), position = WindowPosition(Alignment.Center))
         Window(
@@ -179,6 +183,52 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
                         CheckInPanel(store, Modifier.fillMaxWidth()) { checkInOpen = false }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Where the floating bar is on screen, so the chat bubble can sit next to it. */
+private val barBounds = mutableStateOf<java.awt.Rectangle?>(null)
+
+/**
+ * The companion's add-on chat as its own small always-on-top window: below the floating bar when the bar is
+ * in the top half of the screen, above it otherwise. Transparent around the bubbles.
+ */
+@Composable
+private fun BubbleWindow(store: Store, anchor: java.awt.Rectangle?) {
+    val width = 390
+    val height = 320
+    val window = remember {
+        ComposeWindow().apply {
+            type = java.awt.Window.Type.UTILITY
+            isUndecorated = true
+            isTransparent = true
+            isAlwaysOnTop = true
+            focusableWindowState = false
+            background = java.awt.Color(0, 0, 0, 0)
+            title = "Nimisham chat"
+        }
+    }
+    val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+    val below = anchor == null || anchor.y < screen.y + screen.height / 2
+    val x = (anchor?.x ?: (screen.x + screen.width - width - 16)).coerceIn(screen.x, screen.x + screen.width - width)
+    val y = when {
+        anchor == null -> screen.y + 16
+        below -> anchor.y + anchor.height + 4
+        else -> anchor.y - height - 4
+    }
+    Window(
+        create = { window },
+        dispose = { it.dispose() },
+        update = { w ->
+            if (w.x != x || w.y != y || w.width != width || w.height != height) w.setBounds(x, y, width, height)
+            if (!w.isVisible) w.isVisible = true
+        },
+    ) {
+        NimishamTheme {
+            Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = if (below) Alignment.TopStart else Alignment.BottomStart) {
+                NudgeBubble(store, maxWidth = 376.dp)
             }
         }
     }
@@ -222,11 +272,13 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
                     // Switching shape: keep the bottom-left corner (where the companion stands) in place.
                     val bottom = w.y + w.height
                     w.setBounds(w.x, bottom - h, width, h)
+                    barBounds.value = w.bounds
                 } else {
                     val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
                     val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - width) / 2
                     val y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
                     w.setBounds(x, y, width, h)
+                    barBounds.value = w.bounds
                 }
             }
             if (!w.isVisible) w.isVisible = true
@@ -250,7 +302,7 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
                 window,
                 onClick = { x -> onClickLatest.value(x) },
                 onDoubleClick = { onDoubleLatest.value() },
-                onMoved = { x, y -> store.updatePrefs { it.copy(barX = x, barY = y) } },
+                onMoved = { x, y -> store.updatePrefs { it.copy(barX = x, barY = y) }; barBounds.value = window.bounds },
             )
             if (petMode) {
                 Column(drag, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {

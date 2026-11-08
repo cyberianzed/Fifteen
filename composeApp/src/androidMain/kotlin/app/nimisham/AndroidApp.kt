@@ -90,8 +90,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        AppVisibility.inFront = false
+        startTracker(this)
+    }
+
     override fun onResume() {
         super.onResume()
+        AppVisibility.inFront = true
         startTracker(this)
         store.kick.trySend(Unit)
     }
@@ -103,6 +110,9 @@ fun openCheckIn(ctx: Context) {
 
 /** The check-in as a floating card over whatever is on screen. */
 class CheckInActivity : ComponentActivity() {
+    override fun onResume() { super.onResume(); AppVisibility.inFront = true; startTracker(this) }
+    override fun onPause() { super.onPause(); AppVisibility.inFront = false; startTracker(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val store = NimishamApplication.store(this)
@@ -148,6 +158,7 @@ class ActionReceiver : BroadcastReceiver() {
                 val cat = last?.categoryId ?: store.activeCategories().firstOrNull()?.id
                 if (cat != null) store.start(cat, store.db.value.profile.defaultMinutes, last?.intent ?: "")
             }
+            ACTION_NUDGE -> store.nudges.answer(intent.getStringExtra("nudge_action") ?: "close")
             ACTION_ALARM -> {
                 // Block ended: the companion's sound, then the check-in right away if we may draw over other apps.
                 if (store.phase() == Phase.Due) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
@@ -163,6 +174,7 @@ class ActionReceiver : BroadcastReceiver() {
         const val ACTION_EXTEND = "app.nimisham.EXTEND"
         const val ACTION_RESUME = "app.nimisham.RESUME"
         const val ACTION_ALARM = "app.nimisham.ALARM"
+        const val ACTION_NUDGE = "app.nimisham.NUDGE"
     }
 }
 
@@ -195,6 +207,18 @@ private fun AndroidSettings(store: Store) {
             store.updatePrefs { it.copy(overlayStyle = if (i == 1) "pill" else "line") }; startTracker(ctx)
         }
         Spacer(Modifier.height(10.dp))
+    }
+    val addonsOn = store.db.collectAsState().value.profile.addons
+    if (addonsOn) {
+        Toggle(
+            "Add-on bubbles over other apps", prefs.nudgeOverlay && canOverlay,
+            if (canOverlay) "Your companion's eye-break, water and check-in chats float on top of whatever you're using." else "Needs the 'display over other apps' permission — tap to grant.",
+        ) { on ->
+            if (on && !Settings.canDrawOverlays(ctx)) {
+                ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            store.updatePrefs { it.copy(nudgeOverlay = on) }; startTracker(ctx)
+        }
     }
     Spacer(Modifier.height(10.dp))
     Hairline()

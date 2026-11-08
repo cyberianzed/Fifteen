@@ -137,6 +137,7 @@ class SyncEngine(private val store: Store, private val json: Json) {
                     "block" -> db.blocks.firstOrNull { it.id == id }?.let { json.encodeToJsonElement(Block.serializer(), it) to it.updatedAt }
                     "category" -> db.categories.firstOrNull { it.id == id }?.let { json.encodeToJsonElement(Category.serializer(), it) to it.updatedAt }
                     "profile" -> json.encodeToJsonElement(Profile.serializer(), db.profile) to db.profile.updatedAt
+                    "nudge" -> json.encodeToJsonElement(NudgeState.serializer(), db.nudge) to db.nudge.updatedAt
                     else -> null
                 } ?: continue
                 pushed[k] = updated
@@ -165,6 +166,7 @@ class SyncEngine(private val store: Store, private val json: Json) {
             "block" -> d.blocks.firstOrNull { it.id == id }?.updatedAt
             "category" -> d.categories.firstOrNull { it.id == id }?.updatedAt
             "profile" -> d.profile.updatedAt
+            "nudge" -> d.nudge.updatedAt
             else -> null
         }
     }
@@ -194,6 +196,7 @@ class SyncEngine(private val store: Store, private val json: Json) {
             val blocks = d.blocks.associateBy { it.id }.toMutableMap()
             val cats = d.categories.associateBy { it.id }.toMutableMap()
             var profile = d.profile
+            var nudge = d.nudge
             for (row in rows) {
                 val o = row.jsonObject
                 val kind = o["kind"]!!.jsonPrimitive.content
@@ -214,10 +217,14 @@ class SyncEngine(private val store: Store, private val json: Json) {
                             val p = json.decodeFromJsonElement(Profile.serializer(), data)
                             if (p.updatedAt > profile.updatedAt) profile = p
                         }
+                        "nudge" -> {
+                            val nn = json.decodeFromJsonElement(NudgeState.serializer(), data)
+                            if (nn.updatedAt > nudge.updatedAt) nudge = nn
+                        }
                     }
                 }
             }
-            d = d.copy(blocks = blocks.values.sortedBy { it.startAt }, categories = cats.values.toList(), profile = profile)
+            d = d.copy(blocks = blocks.values.sortedBy { it.startAt }, categories = cats.values.toList(), profile = profile, nudge = nudge)
             normalizeLive(d)
         }
     }

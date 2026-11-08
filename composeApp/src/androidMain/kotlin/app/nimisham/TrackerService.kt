@@ -51,6 +51,7 @@ class TrackerService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val store get() = NimishamApplication.store(this)
     private var overlay: OverlayBar? = null
+    private var nudgeOverlay: NudgeOverlay? = null
     private var syncJob: Job? = null
     private var lastAlarmFor: String? = null
     private var lastDueNotified: String? = null
@@ -69,6 +70,8 @@ class TrackerService : Service() {
                 refresh()
             }
         }
+        nudgeOverlay = NudgeOverlay(this, store)
+        scope.launch(Dispatchers.Default) { store.nudges.loop() }
         syncJob = scope.launch(Dispatchers.Default) {
             val pm = getSystemService(PowerManager::class.java)
             store.syncLoop { if (pm.isInteractive) 8_000 else 60_000 }
@@ -103,6 +106,8 @@ class TrackerService : Service() {
         }
         if (phase != Phase.Due) nm.cancel(DUE_ID)
         overlay?.update(store)
+        nudgeOverlay?.update()
+        NudgeNotifier.update(this, store)
         NimishamWidget.updateAll(this)
     }
 
@@ -204,6 +209,7 @@ class TrackerService : Service() {
 
     override fun onDestroy() {
         overlay?.remove()
+        nudgeOverlay?.remove()
         scope.cancel()
         super.onDestroy()
     }
@@ -221,6 +227,9 @@ class TrackerService : Service() {
                 description = "The live countdown for the current block"; setShowBadge(false)
             })
             nm.createNotificationChannel(NotificationChannel(CH_QUIET, "Background (minimal)", NotificationManager.IMPORTANCE_MIN).apply { setShowBadge(false) })
+            nm.createNotificationChannel(NotificationChannel(NudgeNotifier.CHANNEL, "Add-ons (eye breaks, water, check-ins)", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Little chats from your companion"; setSound(null, null); enableVibration(false)
+            })
             nm.createNotificationChannel(NotificationChannel(CH_CHECKIN, "Check-ins", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Asks how a block went when it ends"; enableVibration(true)
             })

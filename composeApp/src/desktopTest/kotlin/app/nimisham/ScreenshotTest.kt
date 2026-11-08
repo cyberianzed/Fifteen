@@ -166,6 +166,32 @@ class ScreenshotTest {
         ph("checkin-next", 900) { NimishamTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
     }
 
+    /** Add-ons: the tab (desktop + 360dp phone) and the chat bubble at a few stages. */
+    @Test
+    fun addonShots() {
+        val store = seededStore()
+        store.updateProfile { it.copy(addons = true) }
+        store.mutateDb { it.copy(nudge = it.nudge.copy(water = mapOf(epochDay(nowMs()) to 5), eyes = mapOf(epochDay(nowMs()) to 3))) }
+        fun stage(kind: String, st: String, timer: Long = 0) = store.mutateDb {
+            it.copy(nudge = it.nudge.copy(active = ActiveNudge("demo-$kind-$st", kind, st, nowMs() - 20_000, timer)))
+        }
+        stage("eye", "ask")
+        shot("addon-tab", 1280, 1700) { NimishamApp(store, platform, Tab.Addons) }
+        ImageComposeScene(720, 1500 * 2, Density(2f)) { NimishamApp(store, platform, Tab.Addons) }.use { sc ->
+            sc.render(0); sc.render(1_500_000_000L)
+            File(out, "p360-addons.png").writeBytes(sc.render(3_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+        }
+        ImageComposeScene(720, 900 * 2, Density(2f)) { NimishamApp(store, platform, Tab.Now) }.use { sc ->
+            sc.render(0); sc.render(1_500_000_000L)
+            File(out, "p360-now-nudge.png").writeBytes(sc.render(3_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+        }
+        val chats = listOf(Triple("eye", "ask", 0L), Triple("eye", "timer", nowMs() + 12_000), Triple("water", "ask2", 0L), Triple("well", "low", 0L))
+        for ((k, st, timer) in chats) {
+            stage(k, st, timer)
+            shot("chat-$k-$st", 420, 330) { NimishamTheme { Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF2C3550)).padding(10.dp)) { NudgeBubble(store) } } }
+        }
+    }
+
     @Test
     fun checkInAndBar() {
         val due = seededStore(Phase.Due)

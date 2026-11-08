@@ -34,6 +34,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     val reveal: StateFlow<Reveal?> = _reveal.asStateFlow()
 
     val sync = SyncEngine(this, json)
+    val nudges = NudgeEngine(this)
     internal val kick = Channel<Unit>(Channel.CONFLATED)
 
     private fun loadDb(): LocalDb {
@@ -85,6 +86,20 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     // ---------- Derived ----------
 
     fun liveBlock(db: LocalDb = _db.value): Block? = db.blocks.filter { it.live }.maxByOrNull { it.startAt }
+
+    /** Start of the current stretch of work: blocks chained with gaps under 10 minutes. */
+    fun chainStart(db: LocalDb = _db.value, now: Long = nowMs()): Long {
+        val list = db.blocks.filter { !it.deleted && it.startAt <= now }.sortedByDescending { it.startAt }
+        if (list.isEmpty()) return now
+        var start = list[0].startAt
+        for (i in 1 until list.size) {
+            val prev = list[i]
+            val prevEnd = prev.ratedAt ?: prev.stoppedAt ?: prev.endAt
+            if (start - prevEnd > 10 * 60_000L) break
+            start = prev.startAt
+        }
+        return start
+    }
 
     fun phase(now: Long = nowMs(), db: LocalDb = _db.value): Phase {
         val live = liveBlock(db) ?: return Phase.Idle

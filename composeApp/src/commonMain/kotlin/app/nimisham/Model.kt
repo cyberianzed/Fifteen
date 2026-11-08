@@ -54,6 +54,16 @@ data class Profile(
     val dailyGoal: Int = 80,
     val defaultMinutes: Int = 15,
     val quotes: Boolean = true,
+    /** Add-ons (eye breaks, water, check-ins). Off by default; turning it on adds the Add-ons tab. */
+    val addons: Boolean = false,
+    val eyeOn: Boolean = true,
+    val eyeEvery: Int = 20,
+    val waterOn: Boolean = true,
+    val waterEvery: Int = 45,
+    val waterGoal: Int = 8,
+    val wellOn: Boolean = true,
+    /** 0 rarely, 1 sometimes, 2 often. */
+    val wellFreq: Int = 1,
     val updatedAt: Long = 0,
 )
 
@@ -74,6 +84,10 @@ data class LocalPrefs(
     val richNotification: Boolean = true,
     /** Little sound effects that match the companion. */
     val sounds: Boolean = true,
+    /** Show add-on conversations on this device. */
+    val showNudges: Boolean = true,
+    /** Android: show add-on bubbles over other apps (needs the overlay permission). */
+    val nudgeOverlay: Boolean = true,
     val supabaseUrl: String = "",
     val supabaseKey: String = "",
     val email: String = "",
@@ -87,6 +101,7 @@ data class LocalDb(
     val categories: List<Category> = emptyList(),
     val blocks: List<Block> = emptyList(),
     val profile: Profile = Profile(),
+    val nudge: NudgeState = NudgeState(),
     /** "kind:id" of records changed here and not yet pushed. */
     val dirty: Set<String> = emptySet(),
 )
