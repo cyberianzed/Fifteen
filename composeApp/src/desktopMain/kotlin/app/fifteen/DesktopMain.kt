@@ -133,6 +133,8 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
             override fun openCheckIn() { checkInOpen = true }
             @Composable
             override fun PlatformSettings() = DesktopSettings(store)
+            @Composable
+            override fun PlatformFooter() {}
         }
     }
 

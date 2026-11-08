@@ -54,6 +54,9 @@ interface PlatformUi {
     fun keepScreenOn(on: Boolean) {}
     @Composable
     fun PlatformSettings()
+    /** Optional box at the very end of Settings (Android: keep it running in the background). */
+    @Composable
+    fun PlatformFooter()
 }
 
 enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Addons("Add-ons"), Garden("Garden"), Settings("Settings") }

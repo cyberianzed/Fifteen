@@ -88,6 +88,7 @@ fun SettingsScreen(store: Store, platform: PlatformUi, wide: Boolean) {
         Card(Modifier.fillMaxWidth()) { SyncSettings(store) }
         Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { HowPointsWork() }
+        platform.PlatformFooter()
         Spacer(Modifier.height(40.dp))
     }
 }

@@ -64,6 +64,8 @@ data class Profile(
     val wellOn: Boolean = true,
     /** 0 rarely, 1 sometimes, 2 often. */
     val wellFreq: Int = 1,
+    /** Eye breaks, water and check-ins also while no block is running (whenever the pet is out). */
+    val addonsAnytime: Boolean = true,
     /** While you rest: the sleeping companion wakes up after a while and checks on you. */
     val restOn: Boolean = true,
     val restAfter: Int = 30,

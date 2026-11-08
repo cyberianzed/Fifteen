@@ -101,7 +101,8 @@ class PetOverlay(private val ctx: Context, private val store: Store) {
 
     fun update() {
         val prefs = store.prefs.value
-        val show = store.nudges.petOut(prefs) && !AppVisibility.inFront
+        // Stays out while the app is open too, so Hide / Show pet always matches what you see.
+        val show = store.nudges.petOut(prefs)
         if (show && view == null) add() else if (!show && view != null) remove()
         if (!show) menuOpen.value = false
         if (view != null && headAvatar != store.db.value.profile.avatar) renderHead()

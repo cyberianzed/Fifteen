@@ -191,13 +191,26 @@ fun AddonsScreen(store: Store, wide: Boolean) {
         Spacer(Modifier.height(6.dp))
         Text("Little helpers", color = Ink.text, fontSize = 28.sp, fontWeight = FontWeight.Light)
         Spacer(Modifier.height(6.dp))
-        Muted("Your companion brings these up in a chat bubble while you're working. Answer on any device.")
+        Muted("Your companion brings these up in a chat bubble while it's floating on screen. Answer on any device.")
         Spacer(Modifier.height(24.dp))
-        NudgeBubble(store, Modifier.padding(bottom = 20.dp))
+        Card(Modifier.fillMaxWidth()) {
+            Column {
+                Text("When", color = Ink.text, fontSize = 15.sp)
+                Spacer(Modifier.height(8.dp))
+                Segmented(listOf("Anytime", "Only during blocks"), if (p.addonsAnytime) 0 else 1) { i -> store.updateProfile { it.copy(addonsAnytime = i == 0) } }
+                Spacer(Modifier.height(8.dp))
+                Muted(
+                    if (p.addonsAnytime) "Reminders keep coming while you rest too, as long as your pet is out."
+                    else "Reminders only come while a block is running.",
+                    size = 12,
+                )
+            }
+        }
+        Spacer(Modifier.height(18.dp))
 
         AddonCard(
             "Eye breaks (20-20-20)",
-            "Every ${p.eyeEvery} minutes of work: look about 6 metres away for 20 seconds. A small timer runs beside your block timer.",
+            "Every ${p.eyeEvery} minutes: look about 6 metres away for 20 seconds. A small timer runs beside your block timer.",
             p.eyeOn, { on -> store.updateProfile { it.copy(eyeOn = on) } }, { store.nudges.begin("eye", "ask") },
         ) {
             Text("Every", color = Ink.muted, fontSize = 12.sp)
@@ -263,12 +276,6 @@ fun AddonsScreen(store: Store, wide: Boolean) {
             Spacer(Modifier.height(6.dp))
             val options = listOf(20, 30, 45, 60)
             Segmented(listOf("20m", "30m", "45m", "1h"), options.indexOf(p.restAfter).coerceAtLeast(0)) { i -> store.updateProfile { it.copy(restAfter = options[i]) } }
-        }
-        Spacer(Modifier.height(18.dp))
-        Card(Modifier.fillMaxWidth()) {
-            Column {
-                Toggle("Show add-ons on this device", v.prefs.showNudges, "Add-ons talk through your floating companion, so they only appear while it's out (not hidden). Turn this off to keep them on your other device only.") { on -> store.updatePrefs { it.copy(showNudges = on) } }
-            }
         }
         Spacer(Modifier.height(18.dp))
         Muted("Have an idea for an add-on? Fifteen is open source — add-ons are a great first contribution.", size = 12)

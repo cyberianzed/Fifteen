@@ -41,7 +41,6 @@ fun NowScreen(store: Store, platform: PlatformUi, wide: Boolean, onFocus: () -> 
     val v = rememberView(store)
     Page(wide) {
         Header(v, wide)
-        NudgeBubble(store, Modifier.padding(top = 18.dp))
         Spacer(Modifier.height(if (wide) 32.dp else 20.dp))
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {

@@ -67,6 +67,8 @@ class ScreenshotTest {
             Toggle("Floating bar", true, "Always-on-top strip") {}
             Toggle("Companion on the bar", true) {}
         }
+        @Composable
+        override fun PlatformFooter() {}
     }
 
     private fun shot(name: String, w: Int, h: Int, content: @Composable () -> Unit) {

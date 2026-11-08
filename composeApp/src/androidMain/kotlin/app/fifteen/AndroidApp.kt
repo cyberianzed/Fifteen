@@ -111,6 +111,8 @@ class MainActivity : ComponentActivity() {
             }
             @Composable
             override fun PlatformSettings() = AndroidSettings(store)
+            @Composable
+            override fun PlatformFooter() = KeepRunning()
         }
         setContent {
             Box(Modifier.fillMaxSize().imePadding()) { FifteenApp(store, platform) }
@@ -207,28 +209,20 @@ class ActionReceiver : BroadcastReceiver() {
     }
 }
 
-@SuppressLint("BatteryLife")
 @Composable
 private fun AndroidSettings(store: Store) {
     val ctx = LocalContext.current
     val prefs by store.prefs.collectAsState()
-    // Re-read permission states whenever the screen recomposes after returning from system settings.
+    // Re-read the permission whenever the screen recomposes after returning from system settings.
     val tick = remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(1500); tick.intValue++ } }
     tick.intValue
-    val pm = ctx.getSystemService(PowerManager::class.java)
-    val unrestricted = pm.isIgnoringBatteryOptimizations(ctx.packageName)
     val canOverlay = Settings.canDrawOverlays(ctx)
 
     SectionTitle("On this phone")
-    Toggle("Timer notification", prefs.richNotification, "Permanent notification with a live countdown and quick check-in buttons. Off = a quiet minimal one.") { on ->
-        store.updatePrefs { it.copy(richNotification = on) }; startTracker(ctx)
-    }
     Toggle(
-        "Floating pet over other apps", prefs.overlay && canOverlay,
-        if (!canOverlay) "Needs the 'display over other apps' permission — tap to grant."
-        else if (prefs.overlayStyle == "pet") "Your companion floats on top with a ring that fills as the block runs. Tap to play, double-tap to open, long-press to hide it or quit. Add-ons talk through it."
-        else "A thin progress line (or a small pill) that stays on top of everything.",
+        "Float over other apps", prefs.overlay && canOverlay,
+        if (canOverlay) "Keeps Fifteen on screen while you use other apps." else "Needs permission to display over other apps. Tap to allow.",
     ) { on ->
         if (on && !Settings.canDrawOverlays(ctx)) {
             ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -238,54 +232,53 @@ private fun AndroidSettings(store: Store) {
     if (prefs.overlay && canOverlay) {
         Spacer(Modifier.height(6.dp))
         val styles = listOf("pet", "line", "pill")
-        Segmented(listOf("Pet", "Line at the top", "Pill"), styles.indexOf(prefs.overlayStyle).coerceAtLeast(0)) { i ->
+        Segmented(listOf("Pet", "Thin line", "Small pill"), styles.indexOf(prefs.overlayStyle).coerceAtLeast(0)) { i ->
             store.updatePrefs { it.copy(overlayStyle = styles[i], petHidden = false) }; startTracker(ctx)
         }
-        if (prefs.petHidden && prefs.overlayStyle == "pet") {
-            Spacer(Modifier.height(8.dp))
-            GhostButton("Show the pet now") { store.showPet() }
-        }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
+        Muted(
+            when (prefs.overlayStyle) {
+                "line" -> "A thin progress line across the top of the screen."
+                "pill" -> "A small timer you can drag anywhere."
+                else -> "Your companion floats on screen. Long-press it to hide it or quit."
+            },
+            size = 12,
+        )
     }
-    Spacer(Modifier.height(10.dp))
-    Hairline()
-    Spacer(Modifier.height(14.dp))
-    Label("Background")
-    Spacer(Modifier.height(10.dp))
-    val phase = store.phase()
-    Muted(
-        if (phase == Phase.Idle) "Quit closes Fifteen completely: no notification, no floating pet, nothing running. Opening the app (or restarting the phone) starts it again."
-        else "You can quit Fifteen while you're resting. Stop the current block first.",
-    )
-    if (phase == Phase.Idle) {
-        Spacer(Modifier.height(10.dp))
-        GhostButton("Quit Fifteen", color = Ink.coral) { turnOff(ctx) }
-    }
-    Spacer(Modifier.height(10.dp))
-    Hairline()
-    Spacer(Modifier.height(14.dp))
-    Label("Keep it alive")
-    Spacer(Modifier.height(10.dp))
-    Muted(
-        if (unrestricted) "Battery optimisation is off for Fifteen — it won't be killed in the background."
-        else "Phones kill background apps to save battery. Allow Fifteen to run unrestricted so the timer and check-ins never stop.",
-    )
-    Spacer(Modifier.height(12.dp))
-    Row {
-        if (!unrestricted) {
-            PrimaryButton("Allow background running") {
-                runCatching {
-                    ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+/** Last box in Settings: only matters on phones that close background apps. */
+@SuppressLint("BatteryLife")
+@Composable
+private fun KeepRunning() {
+    val ctx = LocalContext.current
+    val tick = remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(1500); tick.intValue++ } }
+    tick.intValue
+    val unrestricted = ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName)
+    Spacer(Modifier.height(24.dp))
+    Card(Modifier.fillMaxWidth()) {
+        Column {
+            SectionTitle("Keep it running")
+            Muted(
+                if (unrestricted) "All set. Fifteen can run in the background."
+                else "Some phones close background apps to save battery. If the timer or pet stops by itself, allow Fifteen to run in the background.",
+                size = 13,
+            )
+            Spacer(Modifier.height(12.dp))
+            Row {
+                if (!unrestricted) {
+                    GhostButton("Allow background running") {
+                        runCatching {
+                            ctx.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    }
+                    Spacer(Modifier.padding(5.dp))
+                }
+                GhostButton("App settings") {
+                    ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             }
-            Spacer(Modifier.padding(5.dp))
-        }
-        GhostButton("App settings") {
-            ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
-    Spacer(Modifier.height(10.dp))
-    Muted("On Xiaomi, Oppo, Vivo, Realme or Samsung also turn on 'Autostart' / set battery to 'No restrictions' in App settings. Fifteen starts itself after a reboot.", size = 12)
-    Spacer(Modifier.height(12.dp))
-    Muted("Tip: long-press your home screen → Widgets → Fifteen for a live companion widget. Tap \"Focus view\" on the Now tab for a calm always-on screen.", size = 12)
 }

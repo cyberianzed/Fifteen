@@ -45,12 +45,25 @@ class NudgeTest {
     }
 
     @Test
+    fun anytimeAddonsAlsoWhileResting() {
+        val s = Store(MemFiles(), CoroutineScope(Dispatchers.Unconfined))
+        val now = nowMs()
+        s.updateProfile { it.copy(addons = true, waterOn = false, wellOn = false, restOn = false, addonsAnytime = false) }
+        s.nudges.tick(now - 25 * 60_000L)
+        s.nudges.tick(now)
+        assertNull(s.db.value.nudge.active, "only during blocks")
+        s.updateProfile { it.copy(addonsAnytime = true) }
+        s.nudges.tick(now)
+        assertEquals("eye", s.db.value.nudge.active?.kind, "anytime: eye break while resting")
+    }
+
+    @Test
     fun restingPetWakesUpAtMostTwice() {
         val s = Store(MemFiles(), CoroutineScope(Dispatchers.Unconfined))
         val now = nowMs()
         val ended = now - 40 * 60_000L
         s.mutateDb { it.copy(blocks = listOf(Block("b", "deep", startAt = ended - 15 * 60_000L, minutes = 15, stoppedAt = ended))) }
-        s.updateProfile { it.copy(addons = true, eyeOn = false, waterOn = false, wellOn = false, restOn = true, restAfter = 30) }
+        s.updateProfile { it.copy(addons = true, eyeOn = false, waterOn = false, wellOn = false, restOn = true, restAfter = 30, addonsAnytime = false) }
         s.nudges.tick(ended)
         s.nudges.tick(now)
         assertEquals("rest", s.db.value.nudge.active?.kind)

@@ -122,13 +122,13 @@ class NudgeEngine(private val store: Store) {
         if (!out || !p.addons || now < n.cooldownUntil) return
         if (phase == Phase.Idle && p.restOn && n.restAsked < 2) {
             val lastBlock = db.blocks.maxOfOrNull { it.stoppedAt ?: it.ratedAt ?: it.endAt } ?: 0L
-            if (now - maxOf(lastBlock, n.restLast, outSince) >= p.restAfter * 60_000L) begin("rest", "ask", now)
-            return
+            if (now - maxOf(lastBlock, n.restLast, outSince) >= p.restAfter * 60_000L) { begin("rest", "ask", now); return }
         }
-        if (phase != Phase.Running) return
+        // Waiting for a check-in: leave that moment alone. Resting: only if add-ons run "anytime".
+        if (phase == Phase.Due || (phase == Phase.Idle && !p.addonsAnytime)) return
         val f = n.followUp
         if (f != null && now >= f.at && enabled(f.kind, p)) { begin(f.kind, f.stage, now); return }
-        val chain = maxOf(store.chainStart(db, now), outSince)
+        val chain = if (phase == Phase.Running) maxOf(store.chainStart(db, now), outSince) else outSince
         if (p.eyeOn && now - maxOf(n.eyeLast, chain) >= p.eyeEvery * 60_000L) { begin("eye", "ask", now); return }
         if (p.waterOn && f?.kind != "water" && now - maxOf(n.waterLast, chain) >= p.waterEvery * 60_000L) { begin("water", "remind", now); return }
         if (p.wellOn) {
