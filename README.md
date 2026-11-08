@@ -7,7 +7,7 @@
 Every 15 minutes it asks one question: *how did that go?* Tap a rating, pick what's next, and keep going.
 No guilt, no lost points, just a little companion (Tree, Clouda or Hunter) cheering you on.
 
-[**Download for Windows and Android →**](../../releases/latest) &nbsp;·&nbsp; [**Support this project 💛**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project)
+[**Download for Windows and Android →**](../../releases/latest) &nbsp;·&nbsp; [**Website**](https://cyberianzed.github.io/Fifteen/) &nbsp;·&nbsp; [**Support this project 💛**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project)
 
 <img src="docs/screenshots/app-now.png" alt="Fifteen main screen" width="860">
 
