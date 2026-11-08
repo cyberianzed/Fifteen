@@ -9,7 +9,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MemFiles : TextFiles {
-    val map = mutableMapOf<String, String>()
+    // Tests stay silent.
+    val map = mutableMapOf("prefs.json" to "{\"sounds\":false}")
     override fun read(name: String) = map[name]
     override fun write(name: String, text: String) { map[name] = text }
 }

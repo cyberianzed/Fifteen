@@ -375,3 +375,27 @@ fun Muted(text: String, modifier: Modifier = Modifier, size: Int = 13) = Text(te
 fun FadeIf(visible: Boolean, content: @Composable () -> Unit) {
     Box(Modifier.alpha(if (visible) 1f else 0f).fillMaxHeight()) { content() }
 }
+
+/** The tiny timer under the companion in pet mode. */
+@Composable
+fun MiniTimer(v: View) {
+    val color = v.category?.color?.asColor() ?: Ink.mellow
+    Column(
+        Modifier.width(132.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD9121318))
+            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            when (v.phase) {
+                Phase.Running -> durationText(v.remaining)
+                Phase.Due -> "check in"
+                Phase.Idle -> "resting"
+            },
+            color = if (v.phase == Phase.Due) Ink.mellow else Ink.text, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+        )
+        if (v.phase == Phase.Running) {
+            Spacer(Modifier.height(4.dp))
+            ThinProgress(v.progress, color, Modifier.fillMaxWidth().height(3.dp))
+        }
+    }
+}

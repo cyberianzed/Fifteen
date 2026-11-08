@@ -28,6 +28,8 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     private val _prefs = MutableStateFlow(loadPrefs())
     val prefs: StateFlow<LocalPrefs> = _prefs.asStateFlow()
 
+    init { Sounds.enabled = _prefs.value.sounds }
+
     private val _reveal = MutableStateFlow<Reveal?>(null)
     val reveal: StateFlow<Reveal?> = _reveal.asStateFlow()
 
@@ -76,6 +78,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
 
     fun updatePrefs(f: (LocalPrefs) -> LocalPrefs) {
         _prefs.update(f)
+        Sounds.enabled = _prefs.value.sounds
         persistPrefs()
     }
 
@@ -113,7 +116,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     private fun stamp(old: Long): Long = maxOf(nowMs(), old + 1)
 
     /** Starts a new block now (ending any live one without a rating). */
-    fun start(categoryId: String, minutes: Int, intent: String = "") {
+    fun start(categoryId: String, minutes: Int, intent: String = "", sound: Boolean = true) {
         val now = nowMs()
         val bounty = pendingBounty()
         val block = Block(
@@ -126,6 +129,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             db.copy(blocks = stopped + block, dirty = db.dirty + changed + "block:${block.id}")
         }
         _reveal.value = null
+        if (sound) Sounds.play(Sfx.Start, _db.value.profile.avatar)
     }
 
     /** Rates a block and returns what was earned. */
@@ -149,6 +153,13 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             )
         }
         _reveal.value = Reveal(blockId, rating, outcome, dayPoints(epochDay(block.startAt)))
+        val avatar = db.profile.avatar
+        when {
+            outcome.reward != null -> Sounds.play(Sfx.Reward, avatar, outcome.reward.rarity)
+            rest || rating >= 75 -> Sounds.play(Sfx.Good, avatar)
+            rating == 0 -> Sounds.play(Sfx.Drift, avatar)
+            else -> Sounds.play(Sfx.Okay, avatar)
+        }
         return outcome
     }
 
@@ -156,7 +167,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     fun rateAndContinue(rating: Int) {
         val live = liveBlock() ?: return
         rate(live.id, rating)
-        start(live.categoryId, _db.value.profile.defaultMinutes, live.intent)
+        start(live.categoryId, _db.value.profile.defaultMinutes, live.intent, sound = false)
     }
 
     fun stopTracking() {

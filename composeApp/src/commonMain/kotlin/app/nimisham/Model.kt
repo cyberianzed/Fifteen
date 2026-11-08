@@ -63,6 +63,8 @@ data class LocalPrefs(
     val deviceId: String = "",
     val showBar: Boolean = true,
     val showPet: Boolean = true,
+    /** Desktop floating window: "bar" (companion + bar) or "pet" (bigger companion, tiny timer). */
+    val barMode: String = "bar",
     val barX: Int = -1,
     val barY: Int = -1,
     val askOnStart: Boolean = true,
@@ -70,6 +72,8 @@ data class LocalPrefs(
     val overlay: Boolean = false,
     val overlayStyle: String = "line",
     val richNotification: Boolean = true,
+    /** Little sound effects that match the companion. */
+    val sounds: Boolean = true,
     val supabaseUrl: String = "",
     val supabaseKey: String = "",
     val email: String = "",

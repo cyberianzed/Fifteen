@@ -1,6 +1,16 @@
 package app.nimisham
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Job
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -102,7 +112,7 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
         if (v.phase != Phase.Due) return@LaunchedEffect
         if (promptedAt.second != id || (!checkInOpen && v.now - promptedAt.first > 10 * 60_000L)) {
             promptedAt = v.now to id
-            if (!checkInOpen) Chime.play()
+            if (!checkInOpen) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
             checkInOpen = true
         }
     }
@@ -135,6 +145,7 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
             Separator()
             CheckboxItem("Floating bar", prefs.showBar) { on -> store.updatePrefs { it.copy(showBar = on) } }
             CheckboxItem("Companion on the bar", prefs.showPet) { on -> store.updatePrefs { it.copy(showPet = on) } }
+            CheckboxItem("Pet mode (double-click the bar)", prefs.barMode == "pet") { on -> store.updatePrefs { it.copy(barMode = if (on) "pet" else "bar", showPet = true) } }
             Separator()
             Item("Quit", onClick = ::exitApplication)
         },
@@ -173,13 +184,24 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
     }
 }
 
-/** The always-on-top strip: optional companion + the calm bar. Drag anywhere to move it. */
+/**
+ * The always-on-top companion window. Two shapes: the full bar (companion + calm bar) and pet mode
+ * (a bigger companion standing on its own with a tiny timer). Double-click switches; a single click on the
+ * companion makes it react; drag anywhere to move it.
+ */
 @Composable
 private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> Unit) {
+    val petMode = prefs.showPet && prefs.barMode == "pet"
     val barW = 460
     val petW = if (prefs.showPet) 104 else 0
-    val h = if (prefs.showPet) 104 else 46
-    val width = barW + petW
+    val (width, h) = when {
+        petMode -> 210 to 250
+        prefs.showPet -> (barW + petW) to 104
+        else -> barW to 46
+    }
+    var poke by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var pendingOpen by remember { mutableStateOf<Job?>(null) }
     val window = remember {
         ComposeWindow().apply {
             type = java.awt.Window.Type.UTILITY
@@ -196,33 +218,72 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
         dispose = { it.dispose() },
         update = { w ->
             if (w.width != width || w.height != h) {
-                val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
-                val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - width) / 2
-                val y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
-                w.setBounds(x, y, width, h)
+                if (w.isVisible && w.width > 0) {
+                    // Switching shape: keep the bottom-left corner (where the companion stands) in place.
+                    val bottom = w.y + w.height
+                    w.setBounds(w.x, bottom - h, width, h)
+                } else {
+                    val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+                    val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - width) / 2
+                    val y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
+                    w.setBounds(x, y, width, h)
+                }
             }
             if (!w.isVisible) w.isVisible = true
         },
     ) {
         NimishamTheme {
-            Row(
-                Modifier.fillMaxSize().moveWindowOnDrag(window, petWidth = petW, onClick = onOpen) { x, y -> store.updatePrefs { it.copy(barX = x, barY = y) } },
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                if (prefs.showPet) {
-                    PetView(v.db.profile.avatar, v.petState(), Modifier.size(100.dp))
-                    Spacer(Modifier.width(4.dp))
+            // Callbacks read the latest state but stay stable, so the gesture detector never restarts mid-drag.
+            val density = androidx.compose.ui.platform.LocalDensity.current.density
+            val onClickLatest = rememberUpdatedState<(Float) -> Unit> { x ->
+                    if (petMode || x <= petW * density) poke++
+                    else {
+                        pendingOpen?.cancel()
+                        pendingOpen = scope.launch { delay(330); onOpen() }
+                    }
+            }
+            val onDoubleLatest = rememberUpdatedState {
+                pendingOpen?.cancel()
+                if (prefs.showPet) store.updatePrefs { it.copy(barMode = if (it.barMode == "pet") "bar" else "pet") }
+            }
+            val drag = Modifier.fillMaxSize().moveWindowOnDrag(
+                window,
+                onClick = { x -> onClickLatest.value(x) },
+                onDoubleClick = { onDoubleLatest.value() },
+                onMoved = { x, y -> store.updatePrefs { it.copy(barX = x, barY = y) } },
+            )
+            if (petMode) {
+                Column(drag, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                    PetView(v.db.profile.avatar, v.petState(), Modifier.size(196.dp), interactive = false, poke = poke)
+                    MiniTimer(v)
+                    Spacer(Modifier.height(6.dp))
                 }
-                Box(Modifier.width(barW.dp).padding(bottom = 4.dp, end = 4.dp)) {
-                    FocusBar(v, Modifier.fillMaxWidth())
+            } else {
+                Row(drag, verticalAlignment = Alignment.Bottom) {
+                    if (prefs.showPet) {
+                        PetView(v.db.profile.avatar, v.petState(), Modifier.size(100.dp), interactive = false, poke = poke)
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    Box(Modifier.width(barW.dp).padding(bottom = 4.dp, end = 4.dp)) {
+                        FocusBar(v, Modifier.fillMaxWidth())
+                    }
                 }
             }
         }
     }
 }
 
-/** Drag moves the window (screen coordinates, so no jitter); a press without movement is a click. */
-private fun Modifier.moveWindowOnDrag(window: ComposeWindow, petWidth: Int, onClick: () -> Unit, onMoved: (Int, Int) -> Unit) = pointerInput(petWidth) {
+/**
+ * Drag moves the window (screen coordinates, so no jitter). A press without movement is a click; two clicks
+ * within 350 ms are a double-click.
+ */
+private fun Modifier.moveWindowOnDrag(
+    window: ComposeWindow,
+    onClick: (Float) -> Unit,
+    onDoubleClick: () -> Unit,
+    onMoved: (Int, Int) -> Unit,
+) = pointerInput(Unit) {
+    var lastClick = 0L
     awaitPointerEventScope {
         while (true) {
             val down = awaitPointerEvent(PointerEventPass.Initial)
@@ -238,10 +299,12 @@ private fun Modifier.moveWindowOnDrag(window: ComposeWindow, petWidth: Int, onCl
                 if (moved) window.setLocation(startWin.x + dx, startWin.y + dy)
                 if (e.changes.none { it.pressed }) break
             }
-            if (moved) onMoved(window.x, window.y) else {
-                // Clicks on the companion make it jump; clicks on the bar open things.
-                val pos = down.changes.first().position
-                if (pos.x > petWidth * density) onClick()
+            if (moved) {
+                onMoved(window.x, window.y); lastClick = 0
+            } else {
+                val now = System.currentTimeMillis()
+                if (now - lastClick < 350) { lastClick = 0; onDoubleClick() }
+                else { lastClick = now; onClick(down.changes.first().position.x) }
             }
         }
     }
@@ -252,7 +315,10 @@ private fun DesktopSettings(store: Store) {
     val prefs by store.prefs.collectAsState()
     SectionTitle("On this computer")
     Toggle("Floating bar", prefs.showBar, "A thin always-on-top strip with the time left. Drag it anywhere.") { on -> store.updatePrefs { it.copy(showBar = on) } }
-    Toggle("Companion on the bar", prefs.showPet, "Your tree / spirit / hunter sits beside the bar. Click it to play.") { on -> store.updatePrefs { it.copy(showPet = on) } }
+    Toggle("Companion on the bar", prefs.showPet, "Your tree / spirit / hunter sits beside the bar. Click it to play, double-click for pet mode.") { on -> store.updatePrefs { it.copy(showPet = on) } }
+    Toggle("Pet mode", prefs.barMode == "pet", "A bigger companion on its own with a tiny timer. Double-click the floating window to switch.") { on ->
+        store.updatePrefs { it.copy(barMode = if (on) "pet" else "bar", showPet = true) }
+    }
     Toggle("Ask what's first at startup", prefs.askOnStart) { on -> store.updatePrefs { it.copy(askOnStart = on) } }
     Toggle(
         "Start with Windows", prefs.autostart,
@@ -273,32 +339,6 @@ private class RingPainter(val progress: Float, val color: Color, val phase: Phas
         drawArc(Color(0x55FFFFFF), 0f, 360f, false, tl, sz, style = Stroke(stroke))
         drawArc(if (phase == Phase.Due) Ink.mellow else color, -90f, 360f * progress, false, tl, sz, style = Stroke(stroke))
         if (phase == Phase.Idle) drawCircle(Color(0xFF9A9CA5), radius = s * 0.12f)
-    }
-}
-
-/** A soft two-note chime made on the fly (no audio files). */
-private object Chime {
-    fun play() {
-        Thread {
-            runCatching {
-                val rate = 44100f
-                val notes = listOf(659.25 to 0.18, 987.77 to 0.42)
-                val samples = notes.sumOf { (it.second * rate).toInt() }
-                val buf = ByteArray(samples * 2)
-                var i = 0
-                for ((f, d) in notes) {
-                    val n = (d * rate).toInt()
-                    for (k in 0 until n) {
-                        val env = kotlin.math.exp(-4.0 * k / n) * minOf(1.0, k / 400.0)
-                        val v = (kotlin.math.sin(2 * Math.PI * f * k / rate) * env * 0.25 * Short.MAX_VALUE).toInt()
-                        buf[i++] = (v and 0xff).toByte(); buf[i++] = (v shr 8 and 0xff).toByte()
-                    }
-                }
-                val fmt = javax.sound.sampled.AudioFormat(rate, 16, 1, true, false)
-                val line = javax.sound.sampled.AudioSystem.getSourceDataLine(fmt)
-                line.open(fmt); line.start(); line.write(buf, 0, buf.size); line.drain(); line.close()
-            }
-        }.apply { isDaemon = true }.start()
     }
 }
 

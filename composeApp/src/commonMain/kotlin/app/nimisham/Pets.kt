@@ -13,7 +13,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -47,6 +50,8 @@ data class PetState(
     val jump: Float = 0f,
     /** Recent drift: a falling leaf / a wobble, shown softly. */
     val drifted: Boolean = false,
+    /** Which click reaction is playing: 0 hop and shake, 1 spin, 2 hearts. */
+    val reaction: Int = 0,
 )
 
 data class AvatarInfo(val id: String, val name: String, val blurb: String)
@@ -57,18 +62,27 @@ val AVATARS = listOf(
     AvatarInfo("hunter", "Hunter", "Levels up, bulks up and powers an aura as your rank climbs."),
 )
 
-/** Animated, clickable companion. Click → it jumps. */
+/**
+ * Animated companion. A click (or a change of [poke]) plays a reaction: hop and shake, a full 3D spin, or hearts.
+ */
 @Composable
-fun PetView(kind: String, state: PetState, modifier: Modifier = Modifier, interactive: Boolean = true) {
+fun PetView(kind: String, state: PetState, modifier: Modifier = Modifier, interactive: Boolean = true, poke: Int = 0) {
     val transition = rememberInfiniteTransition()
     val t by transition.animateFloat(0f, 600f, infiniteRepeatable(tween(600_000, easing = LinearEasing), RepeatMode.Restart))
     val jump = remember { Animatable(0f) }
+    var reaction by remember { mutableIntStateOf(0) }
+    var count by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
-    val click = if (interactive) Modifier.clickable(remember { MutableInteractionSource() }, indication = null) {
-        scope.launch { jump.snapTo(0f); jump.animateTo(1f, tween(900, easing = LinearEasing)); jump.snapTo(0f) }
-    } else Modifier
+    val play: () -> Unit = {
+        count++
+        Sounds.play(Sfx.Poke, kind)
+        reaction = (count * 7 + (nowMs() % 3).toInt()) % 3
+        scope.launch { jump.snapTo(0f); jump.animateTo(1f, tween(if (reaction == 1) 1400 else 1000, easing = LinearEasing)); jump.snapTo(0f) }
+    }
+    LaunchedEffect(poke) { if (poke > 0) play() }
+    val click = if (interactive) Modifier.clickable(remember { MutableInteractionSource() }, indication = null) { play() } else Modifier
     Box(modifier.then(click)) {
-        Canvas(Modifier.fillMaxSize()) { drawPet(kind, state.copy(jump = jump.value), t) }
+        Canvas(Modifier.fillMaxSize()) { drawPet(kind, state.copy(jump = jump.value, reaction = reaction), t) }
     }
 }
 
@@ -102,16 +116,30 @@ private fun DrawScope.groundShadow(cx: Float, y: Float, w: Float, alpha: Float =
 
 // ---------------- Tree ----------------
 
+private fun easeInOut(x: Float) = x * x * (3 - 2 * x)
+
+private class Drawable3D(val depth: Float, val draw: DrawScope.() -> Unit)
+
+/**
+ * A small floating island with a tree whose canopy is a cloud of lit spheres placed in 3D: it turns gently,
+ * nearer leaves are brighter and larger, and fruit hides behind the foliage as it rotates.
+ */
 private fun DrawScope.drawTree(s: PetState, t: Float) {
     val w = size.width; val h = size.height
     val cx = w / 2
-    val groundY = h * 0.86f
+    val groundY = h * 0.78f
     val g = s.growth.coerceIn(0f, 1f)
     val extra = (s.growth - 1f).coerceAtLeast(0f)
     val night = s.asleep
-    val sway = sin(t * 1.3f) * (if (night) 0.6f else 2.2f) + bounce(s.jump) * sin(t * 40f) * 6f
+    val j = s.jump
+    val hop = if (s.reaction == 0) bounce(j) * h * 0.07f else 0f
+    // Young plants are drawn larger so they still fill the frame nicely.
+    val grow = 1.55f - 0.55f * g
+    val sway = sin(t * 1.3f) * (if (night) 0.5f else 1.6f) + (if (s.reaction == 0) bounce(j) * sin(t * 38f) * 5f else 0f)
+    val yaw = sin(t * 0.35f) * 0.5f + (if (s.reaction == 1) easeInOut(j) * 2f * PI.toFloat() else 0f)
+    val tilt = 0.38f
 
-    // Halo when the goal is reached.
+    // Goal reached: a warm halo.
     if (g >= 1f && !night) {
         val pulse = 0.85f + 0.15f * sin(t * 2f)
         drawCircle(
@@ -119,95 +147,174 @@ private fun DrawScope.drawTree(s: PetState, t: Float) {
             radius = w * 0.5f, center = Offset(cx, h * 0.42f),
         )
     }
-    groundShadow(cx, groundY + h * 0.02f, w * (0.45f + 0.3f * g))
-    // Earth mound with a lit top.
-    drawOval(
-        Brush.verticalGradient(listOf(Color(0xFF5B4636), Color(0xFF2C2119)), groundY - h * 0.03f, groundY + h * 0.05f),
-        topLeft = Offset(cx - w * 0.2f, groundY - h * 0.03f), size = Size(w * 0.4f, h * 0.08f),
-    )
 
-    val trunkH = h * (0.08f + 0.40f * g)
-    val trunkW = w * (0.025f + 0.05f * g)
-    val top = Offset(cx, groundY - trunkH)
-    rotate(sway, pivot = Offset(cx, groundY)) {
+    // Floating island: shadow, earthy side band, grassy top.
+    val islandW = w * 0.62f
+    val islandH = h * 0.12f
+    val bob = if (night) 0f else sin(t * 1.1f) * h * 0.006f
+    val gy = groundY + bob - hop * 0.3f
+    groundShadow(cx, h * 0.95f, islandW * 0.8f, 0.35f)
+    val side = Path().apply {
+        moveTo(cx - islandW / 2, gy)
+        cubicTo(cx - islandW * 0.42f, gy + islandH * 1.0f, cx - islandW * 0.1f, gy + islandH * 1.45f, cx, gy + islandH * 1.5f)
+        cubicTo(cx + islandW * 0.1f, gy + islandH * 1.45f, cx + islandW * 0.42f, gy + islandH * 1.0f, cx + islandW / 2, gy)
+        close()
+    }
+    drawPath(side, Brush.verticalGradient(listOf(Color(0xFF6D4C36), Color(0xFF3A281C), Color(0xFF22170F)), gy, gy + islandH * 1.5f))
+    for (k in 0..2) {
+        val y = gy + islandH * (0.35f + 0.3f * k)
+        drawLine(Color(0x22000000), Offset(cx - islandW * (0.38f - 0.1f * k), y), Offset(cx + islandW * (0.34f - 0.1f * k), y + islandH * 0.05f), strokeWidth = h * 0.006f)
+    }
+    val grass = if (night) Color(0xFF2E4A3F) else lerp(Color(0xFF7CB342), Color(0xFF4E9A52), g)
+    drawOval(
+        Brush.radialGradient(listOf(lerp(grass, Color.White, 0.18f), grass, lerp(grass, Color.Black, 0.35f)), Offset(cx - islandW * 0.15f, gy - islandH * 0.2f), islandW * 0.6f),
+        topLeft = Offset(cx - islandW / 2, gy - islandH / 2), size = Size(islandW, islandH),
+    )
+    // Tufts of grass on the rim.
+    for (k in 0 until 9) {
+        val a = k / 9f * 2 * PI.toFloat() + 0.3f
+        val p = Offset(cx + cos(a) * islandW * 0.44f, gy + sin(a) * islandH * 0.42f)
+        if (sin(a) < -0.2f) continue
+        val tuft = lerp(grass, Color.White, 0.12f)
+        for (b in -1..1) drawLine(tuft, p, p + Offset(b * h * 0.008f + sin(t * 2 + k) * h * 0.003f, -h * 0.022f), strokeWidth = h * 0.004f, cap = StrokeCap.Round)
+    }
+
+    // Canopy shadow on the grass, offset away from the light (top-left).
+    if (g >= 0.08f) {
+        val sr = islandW * (0.18f + 0.22f * g) * grow.coerceAtMost(1.3f)
+        drawOval(Color.Black.copy(alpha = 0.22f), topLeft = Offset(cx - sr * 0.6f, gy - islandH * 0.28f), size = Size(sr * 1.6f, islandH * 0.55f))
+    }
+
+    withTransform({
+        translate(0f, -hop + bob)
+        scale(grow, grow, pivot = Offset(cx, gy))
+        rotate(sway, pivot = Offset(cx, gy))
+    }) {
         if (g < 0.08f) {
-            // Sprout: two leaves.
-            val stemTop = Offset(cx, groundY - h * 0.1f)
-            drawLine(Color(0xFF8BC34A), Offset(cx, groundY), stemTop, strokeWidth = w * 0.015f, cap = StrokeCap.Round)
-            leaf(stemTop, w * 0.07f, -35f, Color(0xFF9CCC65))
-            leaf(stemTop, w * 0.07f, 215f, Color(0xFF8BC34A))
-            return@rotate
+            val stemTop = Offset(cx, gy - h * 0.11f)
+            drawLine(Color(0xFF8BC34A), Offset(cx, gy), stemTop, strokeWidth = w * 0.014f, cap = StrokeCap.Round)
+            leaf(stemTop, w * 0.075f, -35f + sin(t * 1.6f) * 6f, Color(0xFFAED581))
+            leaf(stemTop, w * 0.07f, 215f - sin(t * 1.6f) * 6f, Color(0xFF8BC34A))
+            return@withTransform
         }
+
+        val trunkH = h * (0.06f + 0.26f * g)
+        val trunkW = w * (0.022f + 0.032f * g)
+        val top = Offset(cx, gy - trunkH)
+        val crownR = w * (0.11f + 0.17f * g)
+        val crownC = Offset(top.x, top.y - crownR * 0.42f)
+
+        // Trunk: a lit cylinder with a root flare and bark lines.
         val trunk = Path().apply {
-            moveTo(cx - trunkW, groundY)
-            cubicTo(cx - trunkW * 0.6f, groundY - trunkH * 0.5f, cx - trunkW * 0.3f, top.y + trunkH * 0.2f, cx - trunkW * 0.25f, top.y)
-            lineTo(cx + trunkW * 0.25f, top.y)
-            cubicTo(cx + trunkW * 0.3f, top.y + trunkH * 0.2f, cx + trunkW * 0.6f, groundY - trunkH * 0.5f, cx + trunkW, groundY)
+            moveTo(cx - trunkW * 1.6f, gy)
+            quadraticTo(cx - trunkW, gy - trunkH * 0.12f, cx - trunkW * 0.75f, gy - trunkH * 0.4f)
+            lineTo(cx - trunkW * 0.45f, top.y)
+            lineTo(cx + trunkW * 0.45f, top.y)
+            lineTo(cx + trunkW * 0.75f, gy - trunkH * 0.4f)
+            quadraticTo(cx + trunkW, gy - trunkH * 0.12f, cx + trunkW * 1.6f, gy)
             close()
         }
-        drawPath(trunk, Brush.horizontalGradient(listOf(Color(0xFF8D6E52), Color(0xFF5D4433), Color(0xFF3B2A20)), cx - trunkW, cx + trunkW))
-        if (g > 0.3f) {
-            drawLine(Color(0xFF5D4433), Offset(cx, top.y + trunkH * 0.35f), Offset(cx + w * 0.12f * g, top.y + trunkH * 0.12f), strokeWidth = trunkW * 0.5f, cap = StrokeCap.Round)
-            drawLine(Color(0xFF5D4433), Offset(cx, top.y + trunkH * 0.45f), Offset(cx - w * 0.11f * g, top.y + trunkH * 0.2f), strokeWidth = trunkW * 0.45f, cap = StrokeCap.Round)
+        drawPath(trunk, Brush.horizontalGradient(listOf(Color(0xFFA1846A), Color(0xFF6B4E39), Color(0xFF3B2A20)), cx - trunkW, cx + trunkW))
+        for (k in -1..1) {
+            val x = cx + k * trunkW * 0.35f
+            drawLine(Color(0x33000000), Offset(x, gy - trunkH * 0.1f), Offset(x + k * trunkW * 0.1f, top.y + trunkH * 0.1f), strokeWidth = w * 0.003f)
         }
-        // Canopy: lit spheres in a spiral, growing in number and size.
-        val count = 3 + (g * 10).toInt()
-        val crownR = w * (0.10f + 0.24f * g)
+
         val young = Color(0xFFB5D86F); val mature = Color(0xFF3E8E4E)
         var leafColor = lerp(young, mature, g)
         if (night) leafColor = lerp(leafColor, Color(0xFF2B3A55), 0.55f)
-        val centers = (0 until count).map { i ->
-            val a = i * 2.39996f
-            val r = crownR * 0.75f * kotlin.math.sqrt((i + 0.5f) / count)
-            Offset(top.x + cos(a) * r, top.y - crownR * 0.35f + sin(a) * r * 0.75f)
-        }.sortedBy { it.y }
-        val blobR = crownR * (0.42f + 0.1f * (1 - g))
-        for ((i, c) in centers.withIndex()) {
-            val wob = sin(t * 1.7f + i) * blobR * 0.03f
-            val center = c + Offset(wob, 0f)
-            drawCircle(
-                Brush.radialGradient(
-                    listOf(lerp(leafColor, Color.White, 0.28f), leafColor, lerp(leafColor, Color.Black, 0.45f)),
-                    center = center + Offset(-blobR * 0.35f, -blobR * 0.4f), radius = blobR * 1.5f,
-                ),
-                radius = blobR, center = center,
-            )
+
+        fun project(x: Float, y: Float, z: Float): Triple<Offset, Float, Float> {
+            val xr = x * cos(yaw) + z * sin(yaw)
+            val zr = -x * sin(yaw) + z * cos(yaw)
+            val yp = y * cos(tilt) + zr * sin(tilt)
+            return Triple(Offset(crownC.x + xr, crownC.y + yp), zr, y)
         }
-        // Blossoms and fruit.
-        if (g > 0.55f) {
-            val blossoms = ((g - 0.55f) * 22).toInt()
-            for (i in 0 until blossoms) {
-                val c = centers[i % centers.size]
-                val a = i * 1.7f
-                val p = c + Offset(cos(a) * blobR * 0.6f, sin(a) * blobR * 0.5f)
-                drawCircle(if (night) Color(0xFF8E9AB8) else Color(0xFFFFE4EC), radius = w * 0.008f, center = p)
+
+        val items = mutableListOf<Drawable3D>()
+        // Branches into the crown (drawn first, mostly hidden by leaves).
+        for (k in 0 until 3) {
+            val a = k * 2.1f + 0.4f
+            val (p, z, _) = project(cos(a) * crownR * 0.45f, crownR * 0.15f, sin(a) * crownR * 0.45f)
+            items += Drawable3D(z - crownR) {
+                drawLine(Color(0xFF5D4433), top, p, strokeWidth = trunkW * 0.55f, cap = StrokeCap.Round)
             }
+        }
+        val n = 9 + (g * 16).toInt()
+        val blobR = crownR * (0.48f - 0.12f * g)
+        val sx = crownR * 0.78f; val sy = crownR * 0.6f
+        for (i in 0 until n) {
+            val yy = 1f - 2f * (i + 0.5f) / n
+            val rr = kotlin.math.sqrt(1f - yy * yy)
+            val a = i * 2.39996f
+            val wob = sin(t * 1.5f + i) * 0.03f
+            val (p, z, y) = project(cos(a) * rr * sx * (1 + wob), -yy * sy, sin(a) * rr * sx)
+            val d = (z / sx).coerceIn(-1f, 1f)
+            val up = (-y / sy + 1f) / 2f
+            val r = blobR * (1f + 0.14f * d)
+            val shade = lerp(lerp(leafColor, Color.Black, 0.5f), lerp(leafColor, Color.White, 0.12f), (0.55f * (d + 1f) / 2f + 0.45f * up).coerceIn(0f, 1f))
+            items += Drawable3D(z) {
+                drawCircle(
+                    Brush.radialGradient(
+                        listOf(lerp(shade, Color.White, 0.3f), shade, lerp(shade, Color.Black, 0.45f)),
+                        center = p + Offset(-r * 0.38f, -r * 0.42f), radius = r * 1.55f,
+                    ),
+                    radius = r, center = p,
+                )
+                if (d > 0.3f && !night) drawCircle(Color.White.copy(alpha = 0.18f * d), radius = r * 0.16f, center = p + Offset(-r * 0.4f, -r * 0.45f))
+            }
+        }
+        // Blossoms after the halfway mark, fruit for perfect blocks; both sit on the canopy surface.
+        val blossoms = if (g > 0.5f) ((g - 0.5f) * 30).toInt() else 0
+        for (i in 0 until blossoms) {
+            val yy = 0.9f - 1.6f * (i + 0.5f) / blossoms.coerceAtLeast(1)
+            val rr = kotlin.math.sqrt((1f - yy * yy).coerceAtLeast(0f))
+            val a = i * 2.39996f + 1.1f
+            val (p, z, _) = project(cos(a) * rr * (sx + blobR * 0.55f), -yy * (sy + blobR * 0.4f), sin(a) * rr * (sx + blobR * 0.55f))
+            items += Drawable3D(z + blobR * 0.6f) { drawCircle(if (night) Color(0xFF8E9AB8) else Color(0xFFFFE4EC), radius = w * 0.0075f, center = p) }
         }
         val fruitCount = min(s.fruits, 14)
         for (i in 0 until fruitCount) {
-            val c = centers[(i * 3 + 1) % centers.size]
-            val a = i * 2.1f + 0.5f
-            val p = c + Offset(cos(a) * blobR * 0.55f, sin(a) * blobR * 0.45f + blobR * 0.2f)
-            val fr = w * (0.018f + 0.006f * extra.coerceAtMost(1f))
+            val yy = 0.5f - 1.2f * (i + 0.5f) / fruitCount
+            val rr = kotlin.math.sqrt((1f - yy * yy).coerceAtLeast(0f))
+            val a = i * 2.39996f + 0.4f
+            val (p, z, _) = project(cos(a) * rr * (sx + blobR * 0.5f), -yy * (sy + blobR * 0.35f), sin(a) * rr * (sx + blobR * 0.5f))
+            val fr = w * (0.017f + 0.005f * extra.coerceAtMost(1f))
             val base = if (i % 3 == 2) Color(0xFFE85D3F) else Color(0xFFFFC233)
-            drawCircle(
-                Brush.radialGradient(listOf(Color.White, base, lerp(base, Color.Black, 0.4f)), p + Offset(-fr * 0.4f, -fr * 0.4f), fr * 1.6f),
-                radius = fr, center = p,
-            )
+            items += Drawable3D(z + blobR * 0.7f) {
+                drawCircle(
+                    Brush.radialGradient(listOf(Color.White, base, lerp(base, Color.Black, 0.45f)), p + Offset(-fr * 0.4f, -fr * 0.4f), fr * 1.6f),
+                    radius = fr, center = p,
+                )
+            }
+        }
+        items.sortBy { it.depth }
+        items.forEach { it.draw(this) }
+
+        if (s.reaction == 0 && j > 0f && !night) {
+            // A shake drops a couple of leaves.
+            for (k in 0 until 3) {
+                val ph = (j + k * 0.2f).coerceAtMost(1f)
+                leaf(Offset(crownC.x + (k - 1) * crownR * 0.6f + sin(ph * 8f) * w * 0.02f, crownC.y + crownR * 0.4f + ph * (gy - crownC.y) * 0.8f), w * 0.03f, ph * 300f, leafColor.copy(alpha = 1f - ph))
+            }
+        }
+        if (s.drifted && !night) {
+            val ph = (t * 0.25f) % 1f
+            leaf(Offset(crownC.x + crownR * 0.7f + sin(ph * 9f) * w * 0.04f, crownC.y + (gy - crownC.y) * ph), w * 0.03f, ph * 360f, Color(0xFFD9A441).copy(alpha = 1f - ph))
         }
     }
-    // A leaf drifts down after a drifted block (gentle, not punishing).
-    if (s.drifted && !night) {
-        val ph = (t * 0.25f) % 1f
-        leaf(Offset(cx + w * 0.18f + sin(ph * 9f) * w * 0.05f, top.y + (groundY - top.y) * ph), w * 0.035f, ph * 360f, Color(0xFFD9A441).copy(alpha = 1f - ph))
-    }
+
     if (night) {
         val moon = Offset(w * 0.82f, h * 0.16f)
         drawCircle(Color(0xFFF6E7B0), radius = w * 0.055f, center = moon)
         drawCircle(Ink.bg, radius = w * 0.05f, center = moon + Offset(w * 0.025f, -w * 0.012f))
-        drawZs(Offset(cx + w * 0.16f, top.y - h * 0.12f), t, w * 0.05f, Color(0xFFCFD8DC))
+        for (k in 0 until 4) {
+            val tw = 0.5f + 0.5f * sin(t * 1.7f + k * 2f)
+            drawCircle(Color.White.copy(alpha = 0.5f * tw), radius = w * 0.006f, center = Offset(w * (0.12f + 0.2f * k), h * (0.1f + 0.06f * (k % 2))))
+        }
+        drawZs(Offset(cx + w * 0.14f, h * 0.32f), t, w * 0.05f, Color(0xFFCFD8DC))
     }
-    sparkles(s, t, Offset(cx, h * 0.4f), w * 0.4f)
+    sparkles(s, t, Offset(cx, h * 0.38f), w * 0.4f)
 }
 
 private fun DrawScope.leaf(at: Offset, len: Float, angle: Float, color: Color) {
@@ -221,10 +328,29 @@ private fun DrawScope.leaf(at: Offset, len: Float, angle: Float, color: Color) {
     }
 }
 
-/** Click celebration: a ring of sparkles that bursts outwards. */
+private fun DrawScope.heart(c: Offset, r: Float, color: Color) {
+    val p = Path().apply {
+        moveTo(c.x, c.y + r * 0.9f)
+        cubicTo(c.x - r * 1.4f, c.y - r * 0.1f, c.x - r * 0.6f, c.y - r * 1.2f, c.x, c.y - r * 0.4f)
+        cubicTo(c.x + r * 0.6f, c.y - r * 1.2f, c.x + r * 1.4f, c.y - r * 0.1f, c.x, c.y + r * 0.9f)
+        close()
+    }
+    drawPath(p, color)
+}
+
+/** Click reactions: a sparkle burst (jump / spin) or little hearts floating up. */
 private fun DrawScope.sparkles(s: PetState, t: Float, center: Offset, r: Float) {
     if (s.jump <= 0f) return
     val j = s.jump
+    if (s.reaction == 2) {
+        for (i in 0 until 5) {
+            val ph = (j * 1.3f - i * 0.08f).coerceIn(0f, 1f)
+            if (ph <= 0f) continue
+            val p = center + Offset(sin(i * 2.3f + ph * 6f) * r * 0.35f + (i - 2) * r * 0.15f, -ph * r * 1.1f)
+            heart(p, r * (0.07f + 0.02f * (i % 2)), Color(0xFFFF6F91).copy(alpha = (1 - ph)))
+        }
+        return
+    }
     for (i in 0 until 10) {
         val a = i * (2 * PI.toFloat() / 10) + t
         val d = r * (0.4f + j * 0.8f)
@@ -261,7 +387,7 @@ private fun DrawScope.drawSpirit(s: PetState, t: Float) {
         for (i in 0..n) {
             val a = i / n.toFloat() * 2 * PI.toFloat()
             val wob = 1f + 0.035f * sin(a * 5 + t * 1.6f) + 0.02f * sin(a * 3 - t)
-            val rr = r * wob * (if (sin(a) > 0) 0.94f else 1.05f)
+            val rr = r * wob * (1f - 0.055f * sin(a))
             val p = Offset(c.x + cos(a) * rr, c.y + sin(a) * rr)
             if (i == 0) body.moveTo(p.x, p.y) else body.lineTo(p.x, p.y)
         }

@@ -89,6 +89,62 @@ class ScreenshotTest {
         shot("06-focus", 900, 700) { NimishamTheme { FocusMode(store) {} } }
     }
 
+    /** Images for the GitHub README (docs/screenshots), rendered from sample data at 1.5–2× for crispness. */
+    @Test
+    fun readmeShots() {
+        val docs = File("../docs/screenshots").apply { mkdirs() }
+        fun doc(name: String, wDp: Int, hDp: Int, density: Float, content: @Composable () -> Unit) {
+            ImageComposeScene((wDp * density).toInt(), (hDp * density).toInt(), Density(density)) { content() }.use { scene ->
+                scene.render(0); scene.render(1_500_000_000L)
+                val img = scene.render(3_100_000_000L)
+                File(docs, "$name.png").writeBytes(img.encodeToData(EncodedImageFormat.PNG)!!.bytes)
+            }
+        }
+        val store = seededStore()
+        val wallpaper = androidx.compose.ui.graphics.Brush.linearGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF1F2A44), androidx.compose.ui.graphics.Color(0xFF3B2F5C), androidx.compose.ui.graphics.Color(0xFF6B4A5E)),
+        )
+        doc("app-now", 1280, 860, 1.5f) { NimishamApp(store, platform, Tab.Now) }
+        doc("app-insights", 1280, 1480, 1.5f) { NimishamApp(store, platform, Tab.Insights) }
+        doc("app-garden", 1280, 1180, 1.5f) { NimishamApp(store, platform, Tab.Garden) }
+        doc("phone-now", 400, 860, 2f) { NimishamApp(store, platform, Tab.Now) }
+        doc("floating-bar", 640, 136, 2f) {
+            NimishamTheme {
+                Box(Modifier.fillMaxSize().background(wallpaper).padding(16.dp), contentAlignment = Alignment.BottomStart) {
+                    val v = rememberView(store)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        PetView("tree", v.petState(), Modifier.size(100.dp), interactive = false)
+                        FocusBar(v, Modifier.width(480.dp).padding(bottom = 4.dp))
+                    }
+                }
+            }
+        }
+        doc("floating-pet", 260, 300, 2f) {
+            NimishamTheme {
+                Box(Modifier.fillMaxSize().background(wallpaper), contentAlignment = Alignment.BottomCenter) {
+                    val v = rememberView(store)
+                    androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(bottom = 14.dp)) {
+                        PetView("tree", v.petState(), Modifier.size(210.dp), interactive = false)
+                        MiniTimer(v)
+                    }
+                }
+            }
+        }
+        val due = seededStore(Phase.Due)
+        doc("checkin-rate", 600, 460, 2f) { NimishamTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
+        due.rate("live", 100)
+        doc("checkin-reward", 600, 720, 2f) { NimishamTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
+        doc("companions", 780, 300, 2f) {
+            NimishamTheme {
+                Row(Modifier.fillMaxSize().background(Ink.bg).padding(10.dp)) {
+                    PetView("tree", PetState(1.15f, 5, false, level = 12), Modifier.size(250.dp), interactive = false)
+                    PetView("spirit", PetState(0.9f, 4, false, level = 12, mood = 0.9f), Modifier.size(250.dp), interactive = false)
+                    PetView("hunter", PetState(0.8f, 3, false, level = 22), Modifier.size(250.dp), interactive = false)
+                }
+            }
+        }
+    }
+
     @Test
     fun checkInAndBar() {
         val due = seededStore(Phase.Due)

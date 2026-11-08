@@ -20,5 +20,8 @@ JVM shared (`src/jvmShared`): time, HTTP, files. Desktop: `DesktopMain.kt` (tray
 autostart). Android: `AndroidApp.kt` (activities, receivers, settings), `TrackerService.kt` (notification, alarm,
 overlay, widget, sync loop).
 
-Build: `./gradlew.bat :composeApp:desktopTest` (tests + screenshots in `composeApp/build/screenshots`),
-`:composeApp:run`, `:composeApp:assembleDebug`, `:composeApp:packageMsi`.
+Build: `./gradlew.bat :composeApp:desktopTest` (tests + screenshots in `composeApp/build/screenshots`; README images in
+`docs/screenshots`), `:composeApp:run`, `:composeApp:assembleDebug`, `:composeApp:createDistributable`.
+Public releases: add `-Pnimisham.public=true` so the owner's Supabase URL/key are NOT baked in, then
+`:composeApp:assembleRelease` (signed with the key named in `local.properties`) and zip the `createDistributable` folder.
+Check the outputs contain no Supabase URL before uploading. `packageMsi` currently fails in WiX (light.exe exit 216).

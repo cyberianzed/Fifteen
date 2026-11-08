@@ -65,6 +65,11 @@ fun SettingsScreen(store: Store, platform: PlatformUi, wide: Boolean) {
                 }
                 Spacer(Modifier.height(10.dp))
                 Toggle("Quotes on the bar", db.profile.quotes, "A short line rides along with each block.") { q -> store.updateProfile { it.copy(quotes = q) } }
+                val prefs by store.prefs.collectAsState()
+                Toggle("Sound effects", prefs.sounds, "Little sounds that match your companion: marimba for Maram, bubbly bells for Pulli, power-ups for Hunter.") { on ->
+                    store.updatePrefs { it.copy(sounds = on) }
+                    if (on) Sounds.play(Sfx.Good, db.profile.avatar)
+                }
             }
         }
         Spacer(Modifier.height(24.dp))

@@ -5,8 +5,10 @@ import java.util.Properties
 // Supabase URL/key come from local.properties (never committed) and are baked into both builds,
 // so the phone only needs an email + password to join the shared database.
 val localProps = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
-val supabaseUrl = localProps.getProperty("supabase.url", "").trim()
-val supabaseKey = localProps.getProperty("supabase.key", "").trim()
+// Public release builds (-Pnimisham.public=true) leave them out, so each user connects their own project.
+val publicBuild = providers.gradleProperty("nimisham.public").orNull == "true"
+val supabaseUrl = if (publicBuild) "" else localProps.getProperty("supabase.url", "").trim()
+val supabaseKey = if (publicBuild) "" else localProps.getProperty("supabase.key", "").trim()
 
 val generateConfig = tasks.register("generateNimishamConfig") {
     val outDir = layout.buildDirectory.dir("generated/nimisham/kotlin")
@@ -93,8 +95,21 @@ android {
         versionCode = 1
         versionName = "1.0.0"
     }
+    signingConfigs {
+        localProps.getProperty("release.storeFile")?.let { path ->
+            create("release") {
+                storeFile = file(path)
+                storePassword = localProps.getProperty("release.storePassword")
+                keyAlias = localProps.getProperty("release.keyAlias")
+                keyPassword = localProps.getProperty("release.keyPassword")
+            }
+        }
+    }
     buildTypes {
-        getByName("release") { isMinifyEnabled = false }
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

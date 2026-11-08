@@ -129,7 +129,9 @@ class CheckInActivity : ComponentActivity() {
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        runCatching { startTracker(context) }
+        // Only react to the system's own boot / app-updated broadcasts.
+        val ok = intent.action in setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED, "android.intent.action.QUICKBOOT_POWERON")
+        if (ok) runCatching { startTracker(context) }
     }
 }
 
@@ -147,7 +149,8 @@ class ActionReceiver : BroadcastReceiver() {
                 if (cat != null) store.start(cat, store.db.value.profile.defaultMinutes, last?.intent ?: "")
             }
             ACTION_ALARM -> {
-                // Block ended: show the check-in right away if we may draw over other apps.
+                // Block ended: the companion's sound, then the check-in right away if we may draw over other apps.
+                if (store.phase() == Phase.Due) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
                 if (store.phase() == Phase.Due && Settings.canDrawOverlays(context)) runCatching { openCheckIn(context) }
             }
         }
