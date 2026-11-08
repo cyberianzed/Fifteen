@@ -1,0 +1,55 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp">
+    <ImageView
+        android:id="@+id/widget_pet"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:scaleType="fitCenter" />
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#F3F1EA"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="Nimisham" />
+        <Chronometer
+            android:id="@+id/widget_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#F3F1EA"
+            android:textSize="28sp"
+            android:fontFamily="sans-serif-light" />
+        <ProgressBar
+            android:id="@+id/widget_progress"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:max="1000"
+            android:progressTint="#F2C14E"
+            android:progressBackgroundTint="#33FFFFFF" />
+        <TextView
+            android:id="@+id/widget_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#9A9CA5"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>
