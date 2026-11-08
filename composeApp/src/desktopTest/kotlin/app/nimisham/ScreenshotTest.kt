@@ -145,6 +145,27 @@ class ScreenshotTest {
         }
     }
 
+    /** Every screen at a 360dp phone width (e.g. a 720px, 320dpi phone). */
+    @Test
+    fun phone360() {
+        fun ph(name: String, hDp: Int, content: @Composable () -> Unit) {
+            ImageComposeScene(720, hDp * 2, Density(2f)) { content() }.use { scene ->
+                scene.render(0); scene.render(1_500_000_000L)
+                File(out, "p360-$name.png").writeBytes(scene.render(3_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+            }
+        }
+        val store = seededStore()
+        ph("now", 1500) { NimishamApp(store, platform, Tab.Now) }
+        ph("insights", 2600) { NimishamApp(store, platform, Tab.Insights) }
+        ph("garden", 2200) { NimishamApp(store, platform, Tab.Garden) }
+        ph("settings", 2200) { NimishamApp(store, platform, Tab.Settings) }
+        val due = seededStore(Phase.Due)
+        // As in CheckInActivity: 14dp margin around the card.
+        ph("checkin-rate", 520) { NimishamTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
+        due.rate("live", 90)
+        ph("checkin-next", 900) { NimishamTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
+    }
+
     @Test
     fun checkInAndBar() {
         val due = seededStore(Phase.Due)

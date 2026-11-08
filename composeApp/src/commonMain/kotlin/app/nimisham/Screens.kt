@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -121,10 +122,11 @@ private fun Hero(store: Store, v: View, platform: PlatformUi, onFocus: () -> Uni
                     ThinProgress(v.progress, color, Modifier.fillMaxWidth(0.8f).height(4.dp))
                     bountyText(v.live?.bounty)?.let { Spacer(Modifier.height(14.dp)); BountyBanner(it) }
                     Spacer(Modifier.height(22.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        GhostButton("Focus view", onClick = onFocus)
-                        GhostButton("Switch") { platform.openCheckIn() }
-                        GhostButton("Stop") { store.stopTracking() }
+                    // Equal thirds, so all three always fit on one line (even on a 360dp phone).
+                    Row(Modifier.fillMaxWidth().widthIn(max = 420.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton("Focus view", Modifier.weight(1f), hPad = 6.dp, onClick = onFocus)
+                        GhostButton("Switch", Modifier.weight(1f), hPad = 6.dp) { platform.openCheckIn() }
+                        GhostButton("Stop", Modifier.weight(1f), hPad = 6.dp) { store.stopTracking() }
                     }
                 }
                 Phase.Due -> {
@@ -205,7 +207,6 @@ private fun BlockRow(store: Store, b: Block, cat: Category?) {
 
 // ---------------- Garden ----------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GardenScreen(store: Store, wide: Boolean) {
     val v = rememberView(store, 5000)
@@ -215,23 +216,29 @@ fun GardenScreen(store: Store, wide: Boolean) {
         Spacer(Modifier.height(6.dp))
         Text("Your companion", color = Ink.text, fontSize = 28.sp, fontWeight = FontWeight.Light)
         Spacer(Modifier.height(24.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            val preview = v.petState().copy(asleep = false, growth = maxOf(0.7f, v.petState().growth))
-            for (a in AVATARS) {
-                val sel = v.db.profile.avatar == a.id
-                Column(
-                    Modifier.width(if (wide) 250.dp else 160.dp).clip(RoundedCornerShape(22.dp))
-                        .background(if (sel) Ink.surface2 else Ink.surface)
-                        .border(1.dp, if (sel) Ink.mellow.copy(alpha = 0.6f) else Ink.line, RoundedCornerShape(22.dp))
-                        .clickable { store.updateProfile { it.copy(avatar = a.id) } }.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    PetView(a.id, preview, Modifier.size(if (wide) 170.dp else 120.dp))
-                    Text(a.name, color = Ink.text, fontSize = 15.sp)
+        val preview = v.petState().copy(asleep = false, growth = maxOf(0.7f, v.petState().growth))
+        // Three across on every screen; on phones the description of the chosen one sits underneath.
+        AdaptiveGrid(minItem = if (wide) 220.dp else 96.dp, gap = if (wide) 16.dp else 10.dp, count = AVATARS.size, maxColumns = 3) { i, mod ->
+            val a = AVATARS[i]
+            val sel = v.db.profile.avatar == a.id
+            Column(
+                mod.clip(RoundedCornerShape(22.dp))
+                    .background(if (sel) Ink.surface2 else Ink.surface)
+                    .border(1.dp, if (sel) Ink.mellow.copy(alpha = 0.6f) else Ink.line, RoundedCornerShape(22.dp))
+                    .clickable { store.updateProfile { it.copy(avatar = a.id) } }.padding(if (wide) 16.dp else 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PetView(a.id, preview, Modifier.fillMaxWidth().aspectRatio(1f))
+                Text(a.name, color = Ink.text, fontSize = if (wide) 15.sp else 13.sp)
+                if (wide) {
                     Spacer(Modifier.height(4.dp))
                     Muted(a.blurb, size = 12, modifier = Modifier.padding(horizontal = 4.dp))
                 }
             }
+        }
+        if (!wide) {
+            Spacer(Modifier.height(10.dp))
+            Muted(AVATARS.firstOrNull { it.id == v.db.profile.avatar }?.blurb ?: "", size = 12)
         }
         Spacer(Modifier.height(28.dp))
         Card(Modifier.fillMaxWidth()) {
@@ -256,36 +263,36 @@ fun GardenScreen(store: Store, wide: Boolean) {
         }
         Spacer(Modifier.height(28.dp))
         SectionTitle("Your forest", "One companion per day, grown by that day's points.")
-        val days = if (wide) 28 else 14
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for (d in (v.today - days + 1)..v.today) {
-                val pts = store.dayPoints(d, v.db)
-                val fruits = v.db.blocks.count { it.rated && it.rating == 100 && epochDay(it.startAt) == d }
-                Column(
-                    Modifier.width(if (wide) 118.dp else 96.dp).clip(RoundedCornerShape(16.dp)).background(Ink.surface).padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    if (pts > 0) PetView(v.db.profile.avatar, PetState(growthFor(pts, v.db.profile.dailyGoal), fruits, asleep = false, level = v.level), Modifier.size(80.dp), interactive = false)
-                    else Box(Modifier.size(80.dp), contentAlignment = Alignment.Center) { Box(Modifier.size(6.dp).clip(CircleShape).background(Ink.faint)) }
-                    Text(formatDay(d, "EEE d"), color = if (d == v.today) Ink.text else Ink.muted, fontSize = 11.sp)
-                    Text(if (pts > 0) "$pts pts" else "—", color = Ink.faint, fontSize = 11.sp)
-                }
+        val days = if (wide) 28 else 15
+        val first = v.today - days + 1
+        AdaptiveGrid(minItem = if (wide) 112.dp else 96.dp, gap = 10.dp, count = days) { i, mod ->
+            val d = first + i
+            val pts = store.dayPoints(d, v.db)
+            val fruits = v.db.blocks.count { it.rated && it.rating == 100 && epochDay(it.startAt) == d }
+            Column(
+                mod.clip(RoundedCornerShape(16.dp)).background(Ink.surface).padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (pts > 0) PetView(v.db.profile.avatar, PetState(growthFor(pts, v.db.profile.dailyGoal), fruits, asleep = false, level = v.level), Modifier.size(80.dp), interactive = false)
+                else Box(Modifier.size(80.dp), contentAlignment = Alignment.Center) { Box(Modifier.size(6.dp).clip(CircleShape).background(Ink.faint)) }
+                Text(formatDay(d, "EEE d"), color = if (d == v.today) Ink.text else Ink.muted, fontSize = 11.sp)
+                Text(if (pts > 0) "$pts pts" else "—", color = Ink.faint, fontSize = 11.sp)
             }
         }
         Spacer(Modifier.height(28.dp))
         SectionTitle("Collection", "${owned.size} of ${ARTIFACTS.size} found. Drops are random — better blocks and comebacks raise the odds.")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            for (a in ARTIFACTS.sortedBy { it.rarity }) {
-                val n = owned[a.id] ?: 0
-                Column(
-                    Modifier.width(if (wide) 132.dp else 100.dp).clip(RoundedCornerShape(18.dp)).background(Ink.surface)
-                        .border(1.dp, if (n > 0) RARITY_COLORS[a.rarity].asColor().copy(alpha = 0.35f) else Ink.line, RoundedCornerShape(18.dp)).padding(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    ArtifactIcon(a, n > 0, Modifier.size(60.dp))
-                    Text(if (n > 0) a.name else "???", color = if (n > 0) Ink.text else Ink.faint, fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 2)
-                    Text(if (n > 1) "${RARITY_NAMES[a.rarity]} ×$n" else RARITY_NAMES[a.rarity], color = RARITY_COLORS[a.rarity].asColor().copy(alpha = if (n > 0) 1f else 0.4f), fontSize = 10.sp)
-                }
+        val artifacts = ARTIFACTS.sortedBy { it.rarity }
+        AdaptiveGrid(minItem = if (wide) 128.dp else 96.dp, gap = if (wide) 12.dp else 10.dp, count = artifacts.size) { i, mod ->
+            val a = artifacts[i]
+            val n = owned[a.id] ?: 0
+            Column(
+                mod.clip(RoundedCornerShape(18.dp)).background(Ink.surface)
+                    .border(1.dp, if (n > 0) RARITY_COLORS[a.rarity].asColor().copy(alpha = 0.35f) else Ink.line, RoundedCornerShape(18.dp)).padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                ArtifactIcon(a, n > 0, Modifier.size(56.dp))
+                Text(if (n > 0) a.name else "???", color = if (n > 0) Ink.text else Ink.faint, fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 2, minLines = 2)
+                Text(if (n > 1) "${RARITY_NAMES[a.rarity]} ×$n" else RARITY_NAMES[a.rarity], color = RARITY_COLORS[a.rarity].asColor().copy(alpha = if (n > 0) 1f else 0.4f), fontSize = 10.sp)
             }
         }
         Spacer(Modifier.height(40.dp))

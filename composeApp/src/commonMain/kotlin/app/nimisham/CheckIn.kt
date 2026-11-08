@@ -94,13 +94,18 @@ private fun RateStep(store: Store, block: Block, v: View) {
     if (rest) {
         PrimaryButton("I'm back", onClick = { store.rate(block.id, 100) })
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val words = listOf("drifted", "half", "most", "nearly", "all of it")
-            RATINGS.forEachIndexed { i, r ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    RatingChoice(r) { store.rate(block.id, r) }
-                    VerticalGap(8.dp)
-                    Text(words[i], color = Ink.faint, fontSize = 11.sp, textAlign = TextAlign.Center)
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            // Circles shrink to fit narrow phones; 62dp max on wide screens.
+            val gap = 8.dp
+            val size = minOf(62.dp, (maxWidth - gap * 4) / 5)
+            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                val words = listOf("drifted", "half", "most", "nearly", "all of it")
+                RATINGS.forEachIndexed { i, r ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(size)) {
+                        RatingChoice(r, size) { store.rate(block.id, r) }
+                        VerticalGap(8.dp)
+                        Text(words[i], color = Ink.faint, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+                    }
                 }
             }
         }
@@ -113,23 +118,23 @@ private fun RateStep(store: Store, block: Block, v: View) {
 }
 
 @Composable
-private fun RatingChoice(r: Int, onClick: () -> Unit) {
+private fun RatingChoice(r: Int, dim: androidx.compose.ui.unit.Dp = 62.dp, onClick: () -> Unit) {
     val c = ratingColor(r)
     val scale = remember { Animatable(0.6f) }
     LaunchedEffect(Unit) { scale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 300f + r * 2f)) }
     Box(
-        Modifier.size(62.dp).scale(scale.value).clip(CircleShape)
+        Modifier.size(dim).scale(scale.value).clip(CircleShape)
             .background(c.copy(alpha = 0.12f)).border(1.5.dp, c.copy(alpha = 0.75f), CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (r == 0) {
-            Canvas(Modifier.size(20.dp)) {
+            Canvas(Modifier.size(dim * 0.32f)) {
                 drawLine(c, Offset.Zero, Offset(size.width, size.height), strokeWidth = 5f)
                 drawLine(c, Offset(size.width, 0f), Offset(0f, size.height), strokeWidth = 5f)
             }
         } else {
-            Text("$r", color = c, fontSize = 19.sp, fontWeight = FontWeight.Medium)
+            Text("$r", color = c, fontSize = (dim.value * 0.3f).coerceAtMost(19f).sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -241,7 +246,7 @@ private fun NextStep(store: Store, v: View, onClose: () -> Unit) {
     VerticalGap(18.dp)
     Segmented(DURATIONS.map { "$it min" }, DURATIONS.indexOf(minutes).coerceAtLeast(0)) { minutes = DURATIONS[it] }
     VerticalGap(22.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (v.phase != Phase.Idle || v.live == null) GhostButton(if (v.phase == Phase.Idle) "Not now" else "Close") {
             store.dismissReveal(); onClose()
         }

@@ -220,16 +220,38 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, color: Color = In
 }
 
 @Composable
-fun GhostButton(text: String, modifier: Modifier = Modifier, color: Color = Ink.muted, onClick: () -> Unit) {
+fun GhostButton(text: String, modifier: Modifier = Modifier, color: Color = Ink.muted, hPad: Dp = 18.dp, onClick: () -> Unit) {
     Box(
         modifier
             .clip(RoundedCornerShape(50))
             .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(50))
             .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 11.dp),
+            .padding(horizontal = hPad, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = color, fontSize = 13.sp)
+        Text(text, color = color, fontSize = 13.sp, maxLines = 1, softWrap = false)
+    }
+}
+
+/**
+ * Grid whose columns fill the available width: as many columns of at least [minItem] as fit (up to
+ * [maxColumns]), each stretched so rows end flush with the right edge.
+ */
+@Composable
+fun AdaptiveGrid(minItem: Dp, gap: Dp, count: Int, modifier: Modifier = Modifier, maxColumns: Int = 12, item: @Composable (index: Int, itemModifier: Modifier) -> Unit) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val cols = ((maxWidth + gap) / (minItem + gap)).toInt().coerceIn(1, maxColumns)
+        val w = (maxWidth - gap * (cols - 1)) / cols
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+            for (row in 0 until (count + cols - 1) / cols) {
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    for (c in 0 until cols) {
+                        val i = row * cols + c
+                        if (i < count) item(i, Modifier.width(w))
+                    }
+                }
+            }
+        }
     }
 }
 

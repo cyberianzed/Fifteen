@@ -152,22 +152,37 @@ fun InsightsScreen(store: Store, wide: Boolean) {
             Card(Modifier.fillMaxWidth()) {
                 Column {
                     SectionTitle("Where the time went")
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    val donut: @Composable () -> Unit = {
                         Donut(
                             s.perCategory.map { (it.category?.color?.asColor() ?: Ink.faint) to it.minutes.toFloat() },
                             Modifier.size(150.dp), hoursText(s.trackedMinutes.toDouble()), "tracked",
                         )
-                        Spacer(Modifier.width(22.dp))
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    }
+                    val legend: @Composable (Modifier) -> Unit = { mod ->
+                        Column(mod, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             s.perCategory.take(7).forEach { c ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(Modifier.size(8.dp).clip(CircleShape).background(c.category?.color?.asColor() ?: Ink.faint))
                                     Spacer(Modifier.width(8.dp))
-                                    Text(c.category?.name ?: "Removed", color = Ink.text, fontSize = 13.sp, modifier = Modifier.weight(1f), maxLines = 1)
-                                    Text(hoursText(c.minutes.toDouble()), color = Ink.muted, fontSize = 12.sp)
-                                    if (c.category?.rest != true) Text("  ${c.avgRating.roundToInt()}%", color = ratingColor(roundRating(c.avgRating)), fontSize = 12.sp)
+                                    Text(c.category?.name ?: "Removed", color = Ink.text, fontSize = 13.sp, modifier = Modifier.weight(1f), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Text(hoursText(c.minutes.toDouble()), color = Ink.muted, fontSize = 12.sp, maxLines = 1)
+                                    if (c.category?.rest != true) Text("  ${c.avgRating.roundToInt()}%", color = ratingColor(roundRating(c.avgRating)), fontSize = 12.sp, maxLines = 1)
                                 }
                             }
+                        }
+                    }
+                    // Side by side on wide screens; ring above the list on phones so names never get cut.
+                    if (wide) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            donut()
+                            Spacer(Modifier.width(22.dp))
+                            legend(Modifier.weight(1f))
+                        }
+                    } else {
+                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            donut()
+                            Spacer(Modifier.height(18.dp))
+                            legend(Modifier.fillMaxWidth())
                         }
                     }
                 }
