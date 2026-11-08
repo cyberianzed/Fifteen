@@ -278,7 +278,7 @@ fun AddonsScreen(store: Store, wide: Boolean) {
             Segmented(listOf("20m", "30m", "45m", "1h"), options.indexOf(p.restAfter).coerceAtLeast(0)) { i -> store.updateProfile { it.copy(restAfter = options[i]) } }
         }
         Spacer(Modifier.height(18.dp))
-        Muted("Have an idea for an add-on? Fifteen is open source — add-ons are a great first contribution.", size = 12)
+        Muted("Have an idea for an add-on? Send it as a pull request on GitHub; add-ons are a great first contribution.", size = 12)
         Spacer(Modifier.height(40.dp))
     }
 }

@@ -7,7 +7,7 @@
 Every 15 minutes it asks one question: *how did that go?* Tap a rating, pick what's next, and keep going.
 No guilt, no lost points, just a little companion (Tree, Clouda or Hunter) cheering you on.
 
-[**Download for Windows and Android →**](../../releases/latest)
+[**Download for Windows and Android →**](../../releases/latest) &nbsp;·&nbsp; [**Support this project 💛**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project)
 
 <img src="docs/screenshots/app-now.png" alt="Fifteen main screen" width="860">
 
@@ -147,7 +147,7 @@ Changes show up on the other device within a few seconds.
 
 ## Use this project
 
-Fifteen is open source (MIT). Use it as it is, change it to fit you, or borrow ideas for your own app.
+Fifteen is free for **personal, non-commercial use**. You can read the code and build it for yourself; changes are welcome as pull requests to this repository. See the [license](#license).
 
 **Build it yourself.** You need JDK 17+ and the Android SDK (put `sdk.dir=...` in `local.properties`).
 
@@ -159,7 +159,7 @@ Fifteen is open source (MIT). Use it as it is, change it to fit you, or borrow i
 
 **Skip typing the sync keys.** Add `supabase.url=...` and `supabase.key=...` to `local.properties`, and they're built into your own copy. Then each device only needs your email and password. Never commit that file.
 
-**Make it yours.** Everything is plain Kotlin (Compose Multiplatform: one codebase for both platforms):
+**Find your way around.** Everything is plain Kotlin (Compose Multiplatform: one codebase for both platforms):
 
 - `Scoring.kt`: points, bonuses, artifacts and the quotes on the bar
 - `Pets.kt`: the companions, drawn in code, so it's easy to add your own
@@ -170,10 +170,14 @@ Fifteen is open source (MIT). Use it as it is, change it to fit you, or borrow i
 
 Ideas, bug reports and pull requests are all welcome. **Add-ons are a great first contribution:** posture reminders, stretch breaks, a "stand up" nudge, breathing exercises, or anything that helps people focus kindly. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started.
 
+## Support
+
+Fifteen is free and made by one person. If it helps you, [**send a message on Telegram**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project) to support the project. 💛
+
 ## Privacy
 
 There are no ads, no tracking and no account with us. Your log stays on your devices, plus your own Supabase project if you turn on sync.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+**Personal use only.** You can use Fifteen and read its code for yourself, but not for anything commercial, and you can't share modified versions or reuse its code elsewhere. Changes are welcome as pull requests to this repository. See [LICENSE](LICENSE) for the exact terms, and ask on [Telegram](https://t.me/the_jkj) if you'd like other permission.

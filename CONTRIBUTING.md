@@ -38,4 +38,4 @@ Please check your change on a narrow phone screen too. The screenshot test rende
 3. **Works offline.** Sync is optional.
 4. **No tracking, no ads.**
 
-By contributing, you agree your work is released under the [MIT License](LICENSE).
+By sending a pull request, you agree that your contribution can be used in Fifteen under its [license](LICENSE). Please contribute here rather than publishing your own modified copy: the license allows forks only for sending changes back to this repository.

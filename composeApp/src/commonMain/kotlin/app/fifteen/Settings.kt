@@ -3,6 +3,7 @@ package app.fifteen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,6 +90,15 @@ fun SettingsScreen(store: Store, platform: PlatformUi, wide: Boolean) {
         Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { HowPointsWork() }
         platform.PlatformFooter()
+        Spacer(Modifier.height(28.dp))
+        val uri = androidx.compose.ui.platform.LocalUriHandler.current
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            "Like Fifteen? Support this project 💛", color = Ink.muted, fontSize = 13.sp,
+            modifier = Modifier.clip(RoundedCornerShape(50))
+                .clickable { runCatching { uri.openUri("https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project") } }.padding(horizontal = 14.dp, vertical = 8.dp),
+        )
+        }
         Spacer(Modifier.height(40.dp))
     }
 }

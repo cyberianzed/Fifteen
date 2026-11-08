@@ -1,21 +1,35 @@
-MIT License
+Fifteen Personal Use License
 
-Copyright (c) 2026 Jose K James
+Copyright (c) 2026 Jose K James. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The source code is public so you can see how Fifteen works and help improve it.
+It is not open source: you only get the rights listed below.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+YOU MAY
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. Download, install and use Fifteen for your own personal, non-commercial use.
+2. Read the source code and build it for your own personal use.
+3. Fork this repository on GitHub only to prepare changes and send them back to
+   this repository (https://github.com/cyberianzed/Fifteen) as pull requests.
+
+YOU MAY NOT, without written permission from the copyright holder
+
+1. Use Fifteen, its code, artwork, sounds or design for any commercial purpose,
+   including selling it, charging for it, offering it as a service, putting ads
+   in it, or including it in a product.
+2. Publish, share or distribute Fifteen or any modified version of it outside
+   this repository, or reuse its code, artwork, sounds or design in other projects.
+3. Remove or change this license or the copyright notice.
+
+CONTRIBUTIONS
+
+By sending a pull request or other contribution to this repository, you agree
+that it may be used, changed and distributed as part of Fifteen by the copyright
+holder, under this license or any other license the copyright holder chooses.
+
+NO WARRANTY
+
+Fifteen is provided "as is", without warranty of any kind. The copyright holder
+is not liable for any claim, damages or other liability arising from its use.
+
+For permission or questions: https://t.me/the_jkj
