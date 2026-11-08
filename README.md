@@ -129,8 +129,6 @@ On the phone, allow **display over other apps** when asked, so your pet can floa
 
 That's it. Everything works on one device straight away.
 
-**Coming from Nimisham?** Fifteen is the same app with a new name. On Windows, your data moves over by itself the first time Fifteen starts; delete the old Nimisham folder afterwards. On Android, Fifteen installs as a new app next to Nimisham. If you use sync, sign in in Fifteen and everything comes back; then uninstall Nimisham. Without sync, your phone history stays in the old app.
-
 ### 2. Sync your phone and computer (optional, about 5 minutes)
 
 To have the same timer on both, so that stopping on one stops on the other, connect a free [Supabase](https://supabase.com) database. It's yours, and nobody else can see your data.
