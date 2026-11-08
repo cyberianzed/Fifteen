@@ -106,7 +106,12 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
                     posX = lp.x; posY = lp.y
                 }
             },
-        ).apply { addView(compose) }
+        ).apply {
+            // Compose looks up the lifecycle from the window's root view, which is this frame.
+            setViewTreeLifecycleOwner(o)
+            setViewTreeSavedStateRegistryOwner(o)
+            addView(compose)
+        }
         runCatching { wm.addView(frame, lp); view = frame; owner = o }.onFailure { o.stop() }
     }
 
@@ -174,10 +179,15 @@ private class DragFrame(
         return dragging
     }
 
+    // Also reached directly when the press lands on plain text (no button took the touch).
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
-            MotionEvent.ACTION_MOVE -> if (dragging) {
-                onMove(e.rawX - lastX, e.rawY - lastY); lastX = e.rawX; lastY = e.rawY
+            MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; dragging = false }
+            MotionEvent.ACTION_MOVE -> {
+                if (!dragging && kotlin.math.hypot(e.rawX - downX, e.rawY - downY) > slop) {
+                    dragging = true; lastX = e.rawX; lastY = e.rawY; onStart()
+                }
+                if (dragging) { onMove(e.rawX - lastX, e.rawY - lastY); lastX = e.rawX; lastY = e.rawY }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (dragging) { dragging = false; onRelease() }
         }
