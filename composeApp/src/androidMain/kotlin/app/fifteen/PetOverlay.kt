@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -423,7 +424,7 @@ private fun PetOverlayContent(
     val headView: @androidx.compose.runtime.Composable () -> Unit = {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                Modifier.size(68.dp).pointerInput(Unit) {
+                Modifier.requiredSize(68.dp).pointerInput(Unit) {
                     detectTapGestures(onTap = { tap.value() }, onDoubleTap = { double.value() }, onLongPress = { long.value() })
                 },
                 contentAlignment = Alignment.Center,
@@ -468,11 +469,12 @@ private fun PetOverlayContent(
             talking -> NudgeBubble(store, showAvatar = false, maxWidth = 270.dp, mirrored = mirrored)
         }
     }
+    // The chat takes only the room left after the head, so a long message can never squash the pet.
     Row(Modifier.padding(6.dp), verticalAlignment = Alignment.Top) {
         if (mirrored) {
-            side(); Spacer(Modifier.width(6.dp)); headView()
+            Box(Modifier.weight(1f, fill = false)) { side() }; Spacer(Modifier.width(6.dp)); headView()
         } else {
-            headView(); Spacer(Modifier.width(6.dp)); side()
+            headView(); Spacer(Modifier.width(6.dp)); Box(Modifier.weight(1f, fill = false)) { side() }
         }
     }
 }
