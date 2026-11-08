@@ -4,7 +4,7 @@ Thanks for wanting to help! Fifteen is a small, friendly project, so you don't n
 
 ## Good first contributions
 
-- **Add-ons.** Little helpers your companion brings up in a chat bubble: posture checks, stretch breaks, a "stand up" nudge, breathing exercises, journaling prompts… The add-on system is on the [`addons`](../../tree/addons) branch.
+- **Add-ons.** Little helpers your companion brings up in a chat bubble: posture checks, stretch breaks, a "stand up" nudge, breathing exercises, journaling prompts…
 - **Companions.** A new avatar drawn in code (see `Pets.kt`), with its own sounds (`Sound.kt`).
 - **Artifacts and quotes.** New collectibles or encouraging lines in `Scoring.kt`.
 - **Translations and wording.** Clearer, kinder text anywhere in the app.
@@ -12,7 +12,7 @@ Thanks for wanting to help! Fifteen is a small, friendly project, so you don't n
 
 ## Adding an add-on
 
-On the `addons` branch, everything lives in two files:
+Everything lives in two files:
 
 1. `Nudges.kt` holds the conversation. Add a `kind` (for example `"stretch"`), when it should start (in `tick`), what the companion says at each stage (in `step`), and what each answer does (in `advance`).
 2. `NudgesUi.kt` holds the Add-ons tab. Add a card with an on/off switch and its settings.

@@ -59,14 +59,15 @@ Pick one in the **Garden**. It sleeps when you're not tracking, grows with your 
 
 ## On your computer
 
-A thin bar stays on top of every window. **Drag it anywhere. Double-click it** to switch to *pet mode*, where a bigger companion stands on its own with a tiny timer. Click the companion to play.
+Your companion floats on top of every window with a tiny timer. **Drag it anywhere.** Click it to play, **double-click** for the wider bar that shows what you're on, and **right-click** to hide it or quit.
 
 <p align="center">
-  <img src="docs/screenshots/floating-bar.png" alt="The floating bar with the companion" width="560">
+  <img src="docs/screenshots/floating-pet.png" alt="The floating pet" width="190">
   &nbsp;
-  <img src="docs/screenshots/floating-pet.png" alt="Pet mode" width="190">
+  <img src="docs/screenshots/floating-bar.png" alt="The wider bar" width="560">
 </p>
 
+- **Hide** tucks the pet away; it comes back by itself when the block ends or the next one starts
 - Sits in the tray, with a ring that fills as the block runs
 - Asks what's first when you turn on the computer, and starts with Windows
 
@@ -74,9 +75,9 @@ A thin bar stays on top of every window. **Drag it anywhere. Double-click it** t
 
 <img align="right" src="docs/screenshots/phone-now.png" alt="Fifteen on a phone" width="250">
 
-- **A permanent notification** with a live countdown. Rate your block straight from it (100% · 75% · Drifted) and keep going.
+- **A floating pet** over your other apps, in a ring that fills as the block runs. Tap it to play, double-tap to open Fifteen, long-press to hide it or quit, or drag it onto the × to hide it. Prefer something quieter? Pick a thin line or a small pill instead.
+- **A permanent notification** with a live countdown. Rate your block straight from it (100% · 75% · Drifted), or tap **Quit** while resting.
 - **A check-in pops up** when a block ends, even when the phone is asleep.
-- **Optional floating bar** over other apps: a thin line at the top, or a small pill you can drag.
 - **A home-screen widget** with your companion.
 - **Focus view:** a calm full-screen timer that keeps the screen on.
 - Starts again by itself after a reboot.
@@ -94,13 +95,16 @@ See the whole picture without the judgement: focused time, average focus, comeba
 <p align="center"><img src="docs/screenshots/app-garden.png" alt="Garden" width="860"></p>
 </details>
 
-## Coming soon: Add-ons
+## Add-ons
 
-Little helpers your companion brings up in a chat bubble while you work. They're optional and switched on in Settings.
+Little helpers your companion brings up in a chat bubble that comes right out of the floating pet. Turn them on in **Settings → Add-ons**; a small **+** tab appears where you pick which ones.
 
-- **Eye breaks (20-20-20):** every 20 minutes, look about 6 metres away for 20 seconds, with a small timer beside your block timer.
+- **Eye breaks (20-20-20):** every 20 minutes, look about 6 metres away for 20 seconds, with a small timer.
 - **Water:** a reminder, then a friendly "did you drink?" later. It tells you how much is a good amount and offers to remind you again.
 - **Check-ins:** "Everything okay? Feeling productive?" If not, a small idea to reset, like a stretch, a walk or some water.
+- **While you rest:** after a while, your sleeping companion wakes up, asks if everything's okay and offers to start a block. Twice at most, then it lets you be.
+
+They come **anytime** your pet is out, or **only during blocks** if you prefer. Hide the pet and they stay quiet.
 
 <p align="center">
   <img src="docs/screenshots/soon-eye-break.png" alt="Eye break chat with a 20-second timer" width="360">
@@ -108,7 +112,7 @@ Little helpers your companion brings up in a chat bubble while you work. They're
   <img src="docs/screenshots/soon-water.png" alt="Water check-in chat" width="360">
 </p>
 
-Want to try them early? They're on the [`addons`](../../tree/addons) branch. **Have an idea for an add-on?** See [Contributing](#contributing).
+**Have an idea for an add-on?** See [Contributing](#contributing).
 
 ---
 
@@ -121,9 +125,11 @@ Go to [**Releases**](../../releases/latest) and download:
 - **Windows:** `Fifteen-windows.zip`. Unzip it anywhere (for example `C:\Users\you\AppData\Local\Programs\Fifteen`) and run `Fifteen.exe`.
 - **Android:** `Fifteen.apk`. Open it on your phone and allow installing from your browser or files app.
 
-On the phone, open **Settings → On this phone** and tap **Allow background running**, so the timer is never stopped to save battery. On Xiaomi, Oppo, Vivo, Realme or Samsung, also turn on *Autostart* and *No restrictions* in the phone's app settings.
+On the phone, allow **display over other apps** when asked, so your pet can float. If the timer or pet ever stops by itself, open the **Keep it running** box at the bottom of Settings and tap **Allow background running**. On Xiaomi, Oppo, Vivo, Realme or Samsung, also turn on *Autostart* and *No restrictions* in the phone's app settings.
 
 That's it. Everything works on one device straight away.
+
+**Coming from Nimisham?** Fifteen is the same app with a new name. On Windows, your data moves over by itself the first time Fifteen starts; delete the old Nimisham folder afterwards. On Android, Fifteen installs as a new app next to Nimisham. If you use sync, sign in in Fifteen and everything comes back; then uninstall Nimisham. Without sync, your phone history stays in the old app.
 
 ### 2. Sync your phone and computer (optional, about 5 minutes)
 

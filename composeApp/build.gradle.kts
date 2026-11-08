@@ -92,8 +92,8 @@ android {
         applicationId = "app.fifteen"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
     }
     signingConfigs {
         localProps.getProperty("release.storeFile")?.let { path ->
@@ -126,7 +126,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Fifteen"
-            packageVersion = "1.0.1"
+            packageVersion = "1.1.0"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             windows {
                 menu = true
