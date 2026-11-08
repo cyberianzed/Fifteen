@@ -71,12 +71,15 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
             Spacer(Modifier.width(6.dp))
         }
         Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Solid pill so the name and close button stay readable over any wallpaper or window.
+            Row(
+                Modifier.clip(RoundedCornerShape(50)).background(Color(0xE6121318)).padding(start = 10.dp, end = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(AVATARS.firstOrNull { it.id == db.profile.avatar }?.name ?: "", color = Ink.muted, fontSize = 11.sp)
-                Spacer(Modifier.weight(1f, fill = false).width(8.dp))
                 Text(
-                    "×", color = Ink.faint, fontSize = 15.sp,
-                    modifier = Modifier.padding(start = 10.dp).clip(CircleShape).clickable { store.nudges.answer("close") }.padding(horizontal = 6.dp),
+                    "×", color = Ink.muted, fontSize = 15.sp,
+                    modifier = Modifier.padding(start = 6.dp).clip(CircleShape).clickable { store.nudges.answer("close") }.padding(horizontal = 7.dp, vertical = 2.dp),
                 )
             }
             for (i in 0 until shown) {
@@ -96,8 +99,8 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
                     step.buttons.forEachIndexed { i, (label, action) ->
                         Box(
                             Modifier.clip(RoundedCornerShape(50))
-                                .background(if (i == 0) Ink.mellow else Color(0x14FFFFFF))
-                                .border(1.dp, if (i == 0) Ink.mellow else Color(0x22FFFFFF), RoundedCornerShape(50))
+                                .background(if (i == 0) Ink.mellow else Color(0xF21E2129))
+                                .border(1.dp, if (i == 0) Ink.mellow else Color(0x33FFFFFF), RoundedCornerShape(50))
                                 .clickable { store.nudges.answer(action) }
                                 .padding(horizontal = 14.dp, vertical = 8.dp),
                         ) {

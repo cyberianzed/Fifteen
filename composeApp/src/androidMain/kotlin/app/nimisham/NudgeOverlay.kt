@@ -9,6 +9,13 @@ import android.graphics.PixelFormat
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
+import android.annotation.SuppressLint
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
+import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -48,8 +55,13 @@ private class OverlayOwner : LifecycleOwner, SavedStateRegistryOwner {
  */
 class NudgeOverlay(private val ctx: Context, private val store: Store) {
     private val wm = ctx.getSystemService(WindowManager::class.java)
-    private var view: ComposeView? = null
+    private var view: View? = null
     private var owner: OverlayOwner? = null
+    private var target: CloseTarget? = null
+    private val d = ctx.resources.displayMetrics.density
+    // Where the bubble sits; remembered when you drag it somewhere else.
+    private var posX = (10 * d).toInt()
+    private var posY = (90 * d).toInt()
 
     fun update() {
         val db = store.db.value
@@ -59,15 +71,14 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
     }
 
     private fun add() {
-        val d = ctx.resources.displayMetrics.density
         val lp = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT,
-        ).apply { gravity = Gravity.TOP or Gravity.START; x = (10 * d).toInt(); y = (90 * d).toInt() }
+        ).apply { gravity = Gravity.TOP or Gravity.START; x = posX; y = posY }
         val o = OverlayOwner().also { it.start() }
-        val v = ComposeView(ctx).apply {
+        val compose = ComposeView(ctx).apply {
             setViewTreeLifecycleOwner(o)
             setViewTreeSavedStateRegistryOwner(o)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
@@ -77,14 +88,123 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
                 }
             }
         }
-        runCatching { wm.addView(v, lp); view = v; owner = o }.onFailure { o.stop() }
+        lateinit var frame: DragFrame
+        frame = DragFrame(
+            ctx,
+            onStart = { showTarget() },
+            onMove = { dx, dy ->
+                lp.x += dx.toInt(); lp.y += dy.toInt()
+                runCatching { wm.updateViewLayout(frame, lp) }
+                target?.hot = overTarget(lp, frame)
+            },
+            onRelease = {
+                val close = overTarget(lp, frame)
+                hideTarget()
+                if (close) {
+                    store.nudges.answer("close")
+                } else {
+                    posX = lp.x; posY = lp.y
+                }
+            },
+        ).apply { addView(compose) }
+        runCatching { wm.addView(frame, lp); view = frame; owner = o }.onFailure { o.stop() }
+    }
+
+    /** Close when the bubble is dropped on the target (bottom centre) or dragged into the bottom fifth. */
+    private fun overTarget(lp: WindowManager.LayoutParams, v: View): Boolean {
+        val screenH = ctx.resources.displayMetrics.heightPixels
+        val screenW = ctx.resources.displayMetrics.widthPixels
+        val cx = lp.x + v.width / 2
+        val bottom = lp.y + v.height
+        val nearTarget = kotlin.math.abs(cx - screenW / 2) < screenW * 0.35 && bottom > screenH - 170 * d
+        return nearTarget || lp.y > screenH * 0.8
+    }
+
+    private fun showTarget() {
+        if (target != null) return
+        val t = CloseTarget(ctx)
+        val size = (64 * d).toInt()
+        val lp = WindowManager.LayoutParams(
+            size, size, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT,
+        ).apply { gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL; y = (56 * d).toInt() }
+        runCatching { wm.addView(t, lp); target = t }
+    }
+
+    private fun hideTarget() {
+        target?.let { runCatching { wm.removeView(it) } }
+        target = null
     }
 
     fun remove() {
+        hideTarget()
         view?.let { runCatching { wm.removeView(it) } }
         owner?.stop()
         view = null
         owner = null
+    }
+}
+
+/**
+ * Lets taps reach the bubble's buttons, but takes over once a finger moves past the touch slop, reporting
+ * movement in screen coordinates (so moving the window doesn't feed back into the drag).
+ */
+@SuppressLint("ViewConstructor", "ClickableViewAccessibility")
+private class DragFrame(
+    ctx: Context,
+    private val onStart: () -> Unit,
+    private val onMove: (Float, Float) -> Unit,
+    private val onRelease: () -> Unit,
+) : FrameLayout(ctx) {
+    private val slop = ViewConfiguration.get(ctx).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
+    private var lastX = 0f
+    private var lastY = 0f
+    private var dragging = false
+
+    override fun onInterceptTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; dragging = false }
+            MotionEvent.ACTION_MOVE -> if (!dragging && kotlin.math.hypot(e.rawX - downX, e.rawY - downY) > slop) {
+                dragging = true; lastX = e.rawX; lastY = e.rawY; onStart()
+            }
+        }
+        return dragging
+    }
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_MOVE -> if (dragging) {
+                onMove(e.rawX - lastX, e.rawY - lastY); lastX = e.rawX; lastY = e.rawY
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (dragging) { dragging = false; onRelease() }
+        }
+        return true
+    }
+}
+
+/** The round × you drop the bubble on; it grows and turns coral when the bubble is over it. */
+@SuppressLint("ViewConstructor")
+private class CloseTarget(ctx: Context) : View(ctx) {
+    var hot = false
+        set(value) { if (field != value) { field = value; invalidate() } }
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    override fun onDraw(canvas: Canvas) {
+        val r = width / 2f * (if (hot) 1f else 0.8f)
+        val cx = width / 2f; val cy = height / 2f
+        paint.style = Paint.Style.FILL
+        paint.color = if (hot) 0xFFE5735C.toInt() else 0xCC121318.toInt()
+        canvas.drawCircle(cx, cy, r, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = r * 0.12f
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.color = 0xFFF3F1EA.toInt()
+        val k = r * 0.32f
+        canvas.drawLine(cx - k, cy - k, cx + k, cy + k, paint)
+        canvas.drawLine(cx + k, cy - k, cx - k, cy + k, paint)
     }
 }
 
