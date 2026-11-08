@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cyberianzed.github.io/Fifteen/sitemap.xml

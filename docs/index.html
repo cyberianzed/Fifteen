@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fifteen. · A gentle 15-minute focus timer for ADHD, on Windows and Android</title>
+<meta name="description" content="Fifteen is a free, calm focus timer for Windows and Android. Work 15 minutes at a time, check in, earn points that never go down, and grow a companion that floats on your screen.">
+<meta name="keywords" content="15 minute focus timer, ADHD focus app, focus tracker, pomodoro alternative, productivity app Windows, focus app Android, time tracking, body doubling, gentle productivity, floating timer">
+<meta name="author" content="Jose K James">
+<meta name="theme-color" content="#0E0F13">
+<link rel="canonical" href="https://cyberianzed.github.io/Fifteen/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="fifteen.">
+<meta property="og:title" content="fifteen. · Focus fifteen minutes at a time">
+<meta property="og:description" content="A calm focus timer for Windows and Android with a companion that grows as you work. No guilt, no lost points.">
+<meta property="og:url" content="https://cyberianzed.github.io/Fifteen/">
+<meta property="og:image" content="https://cyberianzed.github.io/Fifteen/screenshots/app-now.png">
+<meta property="og:image:alt" content="The Fifteen app: a tree companion, today's points and the current focus block">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="fifteen. · Focus fifteen minutes at a time">
+<meta name="twitter:description" content="A calm focus timer for Windows and Android with a companion that grows as you work.">
+<meta name="twitter:image" content="https://cyberianzed.github.io/Fifteen/screenshots/app-now.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Fifteen",
+  "alternateName": "fifteen.",
+  "description": "A gentle 15-minute focus timer and tracker for Windows and Android, with a floating companion that grows as you work. Built for people with ADHD.",
+  "applicationCategory": "ProductivityApplication",
+  "operatingSystem": "Windows 10, Windows 11, Android 8+",
+  "softwareVersion": "1.1.0",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "downloadUrl": "https://github.com/cyberianzed/Fifteen/releases/latest",
+  "url": "https://cyberianzed.github.io/Fifteen/",
+  "screenshot": [
+    "https://cyberianzed.github.io/Fifteen/screenshots/app-now.png",
+    "https://cyberianzed.github.io/Fifteen/screenshots/app-insights.png",
+    "https://cyberianzed.github.io/Fifteen/screenshots/phone-now.png"
+  ],
+  "author": { "@type": "Person", "name": "Jose K James" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Is Fifteen free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Fifteen is free for personal use on Windows and Android, with no ads and no account." } },
+    { "@type": "Question", "name": "Is Fifteen good for ADHD?", "acceptedAnswer": { "@type": "Answer", "text": "It was made for it: you only commit to the next 15 minutes, a rough block never costs points, and drifting then coming back earns a double-points comeback." } },
+    { "@type": "Question", "name": "How is it different from a Pomodoro timer?", "acceptedAnswer": { "@type": "Answer", "text": "Instead of a strict work and break cycle, Fifteen asks how each block went, rewards honesty, and shows where your time and focus actually went, with a companion floating on your screen." } },
+    { "@type": "Question", "name": "Can I sync my phone and computer?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, optionally, through your own free Supabase database. Stopping a block on one device stops it on the other within seconds." } },
+    { "@type": "Question", "name": "Does it work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Everything works offline on one device; sync is optional." } }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0E0F13; --bg2:#121318; --surface:#16181E; --surface2:#1C1F26;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#F3F1EA; --muted:#A9ABB3; --faint:#72757F;
+  --mellow:#F2C14E; --good:#7BD389; --sky:#7DB7E0; --violet:#B39DDB; --coral:#E5735C;
+  --r:24px; --max:1120px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:400 17px/1.65 Inter,"Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
+.eyebrow{font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--mellow)}
+h1,h2,h3{font-weight:300;letter-spacing:-.02em;line-height:1.12}
+h1{font-size:clamp(42px,7vw,76px)}
+h2{font-size:clamp(32px,4.6vw,48px);margin:.35em 0 .4em}
+h3{font-size:20px;font-weight:500;letter-spacing:-.01em}
+p.lead{font-size:clamp(17px,2vw,20px);color:var(--muted);max-width:620px}
+.muted{color:var(--muted)}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(14,15,19,.72);border-bottom:1px solid transparent;transition:border-color .3s}
+nav.scrolled{border-color:var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+.logo{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:400;letter-spacing:.01em}
+.logo img{width:28px;height:28px}
+.links{display:flex;gap:28px;font-size:15px;color:var(--muted)}
+.links a:hover{color:var(--text)}
+@media (max-width:820px){.links{display:none}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 24px;border-radius:999px;font-size:16px;font-weight:500;transition:transform .2s,background .2s,border-color .2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{background:var(--mellow);color:#1A1405}
+.btn-primary:hover{background:#f5cc66}
+.btn-ghost{border:1px solid var(--line2);color:var(--text)}
+.btn-ghost:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.03)}
+.btn-sm{height:40px;padding:0 18px;font-size:14px}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+
+/* hero */
+.hero{position:relative;padding:72px 0 40px;text-align:center}
+.hero::before{content:"";position:absolute;inset:-120px 0 auto;height:720px;background:radial-gradient(600px 360px at 50% 30%,rgba(242,193,78,.12),transparent 70%);pointer-events:none}
+.hero .lead{margin:22px auto 34px}
+.hero .btns{justify-content:center}
+.hero .note{margin-top:16px;font-size:14px;color:var(--faint)}
+.stage{position:relative;margin:64px auto 0;max-width:1000px}
+.window{border-radius:22px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 40px 120px -30px rgba(0,0,0,.8),0 0 0 1px rgba(0,0,0,.4)}
+.window .bar{height:34px;background:#15171c;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid var(--line)}
+.window .bar i{width:10px;height:10px;border-radius:50%;background:#2a2d35}
+.pet-float{position:absolute;right:-28px;bottom:-46px;width:min(21%,190px);filter:drop-shadow(0 24px 40px rgba(0,0,0,.6));animation:bob 5s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@media (max-width:700px){.pet-float{right:-6px;bottom:-30px;width:26%}}
+
+section{padding:110px 0}
+.center{text-align:center}
+.center .lead{margin-left:auto;margin-right:auto}
+
+/* cards */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+@media (max-width:900px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr;gap:36px}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:30px;text-align:left}
+.card p{color:var(--muted);margin-top:8px;font-size:16px}
+.dot{width:10px;height:10px;border-radius:50%;margin-bottom:18px}
+
+/* steps */
+.steps{list-style:none;display:grid;gap:22px;margin-top:30px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:40px 1fr;gap:16px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:14px;color:var(--mellow)}
+.steps b{font-weight:500}
+.steps span{color:var(--muted)}
+.shot{border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+
+/* points */
+.points{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+@media (max-width:900px){.points{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.points{grid-template-columns:1fr}}
+.points .card h3{font-size:18px}
+.big{font-size:34px;font-weight:300;color:var(--mellow);line-height:1;margin-bottom:14px}
+
+/* companions */
+.companions{margin-top:44px}
+.names{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+@media (max-width:700px){.names{grid-template-columns:1fr}}
+.names div{text-align:center;padding:6px 10px}
+.names p{color:var(--muted);font-size:15px;margin-top:4px}
+
+/* floating */
+.feature-list{list-style:none;margin-top:26px;display:grid;gap:14px}
+.feature-list li{padding-left:22px;position:relative;color:var(--muted)}
+.feature-list li::before{content:"";position:absolute;left:0;top:.7em;width:7px;height:7px;border-radius:50%;background:var(--mellow)}
+.feature-list b{color:var(--text);font-weight:500}
+.pair{display:flex;gap:18px;align-items:flex-end;justify-content:center}
+.pair .pet{width:34%}
+.pair .barimg{width:66%}
+.phone{max-width:300px;margin:0 auto;border-radius:36px;overflow:hidden;border:8px solid #1c1e24;box-shadow:0 40px 100px -30px rgba(0,0,0,.8)}
+
+/* add-ons */
+.addons{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+@media (max-width:900px){.addons{grid-template-columns:1fr}}
+.addons figure{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.addons figcaption{padding:20px 24px 24px}
+.addons figcaption p{color:var(--muted);font-size:15px;margin-top:4px}
+
+/* insights */
+.fade-shot{position:relative;max-height:620px;overflow:hidden;border-radius:22px;border:1px solid var(--line);margin-top:48px}
+.fade-shot::after{content:"";position:absolute;left:0;right:0;bottom:0;height:200px;background:linear-gradient(transparent,var(--bg))}
+
+/* download */
+.download{background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:44px}
+@media (max-width:760px){.dl{grid-template-columns:1fr}}
+.dl .card{display:flex;flex-direction:column;gap:14px}
+.dl .card .btn{align-self:flex-start;margin-top:8px}
+.os{display:flex;align-items:center;gap:12px}
+.os svg{width:26px;height:26px;color:var(--text)}
+
+/* faq */
+.faq{max-width:780px;margin:44px auto 0}
+details{border-bottom:1px solid var(--line);padding:22px 0}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;font-size:18px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--mellow);font-size:22px;line-height:1;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);margin-top:12px}
+
+/* support */
+.support{text-align:center}
+.support .card{max-width:720px;margin:0 auto;text-align:center;padding:48px 30px;background:radial-gradient(400px 200px at 50% 0%,rgba(242,193,78,.10),transparent 70%),var(--surface)}
+.support .btns{justify-content:center;margin-top:26px}
+
+footer{padding:48px 0 60px;color:var(--faint);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 28px;justify-content:space-between;align-items:center}
+footer .flinks{display:flex;flex-wrap:wrap;gap:22px}
+footer a:hover{color:var(--text)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.pet-float{animation:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="fifteen. home"><img src="favicon.svg" alt="">fifteen.</a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#companion">Companion</a>
+      <a href="#addons">Add-ons</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/cyberianzed/Fifteen">GitHub</a>
+    </div>
+    <a class="btn btn-primary btn-sm" href="#download">Download</a>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow reveal">Free for Windows and Android</p>
+      <h1 class="reveal">Focus fifteen<br>minutes at a time.</h1>
+      <p class="lead reveal">A gentle focus timer with a companion that floats on your screen and grows as you work. No guilt, no lost points, just the next fifteen minutes.</p>
+      <div class="btns reveal" id="hero-btns">
+        <a class="btn btn-primary" id="dl-win" href="https://github.com/cyberianzed/Fifteen/releases/latest/download/Fifteen-windows.zip">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7.1L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-ghost" id="dl-android" href="https://github.com/cyberianzed/Fifteen/releases/latest/download/Fifteen.apk">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.86 3.22a11.4 11.4 0 0 0-9.84 0L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52M7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5m10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5"/></svg>
+          Download for Android
+        </a>
+      </div>
+      <p class="note reveal">Version 1.1 · no account, no ads · <a href="https://github.com/cyberianzed/Fifteen/releases/latest" style="text-decoration:underline;text-underline-offset:3px">release notes</a></p>
+
+      <div class="stage reveal">
+        <div class="window">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <img src="screenshots/app-now.png" width="1920" height="1290" alt="Fifteen on Windows: a tree companion on a floating island, today's points and the current 15-minute block">
+        </div>
+        <img class="pet-float" src="screenshots/floating-pet.png" width="520" height="600" alt="The floating pet with its tiny timer">
+      </div>
+    </div>
+  </header>
+
+  <section id="for">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Who it's for</p>
+      <h2 class="reveal">Made for wandering minds</h2>
+      <p class="lead reveal">You don't need willpower for a whole day. Just for the next fifteen minutes.</p>
+      <div class="grid3">
+        <div class="card reveal"><div class="dot" style="background:var(--mellow)"></div><h3>People with ADHD</h3><p>Small blocks, kind check-ins and comebacks that count double. Drifting is part of the training, not a failure.</p></div>
+        <div class="card reveal"><div class="dot" style="background:var(--sky)"></div><h3>Freelancers and students</h3><p>See where your time really goes: focused hours, your best times of day, and how each kind of work feels.</p></div>
+        <div class="card reveal"><div class="dot" style="background:var(--good)"></div><h3>Fans of cosy games</h3><p>Points, levels, golden blocks, eggs and 28 artifacts to collect, with a little friend cheering you on.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" style="padding-top:40px">
+    <div class="wrap grid2">
+      <div>
+        <p class="eyebrow reveal">How it works</p>
+        <h2 class="reveal">One question every fifteen minutes</h2>
+        <ol class="steps">
+          <li class="reveal"><div><b>Pick what you're doing.</b> <span>Deep work, Learning, Admin… plus an optional "one thing" for this block.</span></div></li>
+          <li class="reveal"><div><b>Work.</b> <span>Your companion floats on screen with the time left. Nothing to babysit.</span></div></li>
+          <li class="reveal"><div><b>Check in.</b> <span>How focused were you? Drifted, 50, 75, 90 or 100. Honest answers always earn something.</span></div></li>
+          <li class="reveal"><div><b>Keep going.</b> <span>Collect your points, maybe find an artifact, and choose the next 15, 30 or 60 minutes.</span></div></li>
+        </ol>
+      </div>
+      <div class="shot reveal"><img src="screenshots/checkin-rate.png" width="1200" height="920" alt="The check-in: how did that block go? Drifted, 50, 75, 90 or 100"></div>
+    </div>
+  </section>
+
+  <section id="points" style="padding-top:40px">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Points that never punish</p>
+      <h2 class="reveal">A rough block never costs you anything</h2>
+      <div class="points">
+        <div class="card reveal"><div class="big">+1</div><h3>Drifted? Still counts</h3><p>You earn a point for noticing honestly, and your next good block counts double as a comeback.</p></div>
+        <div class="card reveal"><div class="big">×1.5</div><h3>Momentum</h3><p>Good blocks back to back earn more. A drift only pauses it, it never resets.</p></div>
+        <div class="card reveal"><div class="big">×3</div><h3>Little surprises</h3><p>Random golden blocks and warming eggs that hatch when you finish strong.</p></div>
+        <div class="card reveal"><div class="big">28</div><h3>Artifacts to find</h3><p>From a River Pebble to a Golden Jackfruit. Dry spells quietly raise the odds.</p></div>
+        <div class="card reveal"><div class="big">☕</div><h3>Breaks count too</h3><p>Rest earns points, because rest is part of the work.</p></div>
+        <div class="card reveal"><div class="big">↑</div><h3>Only up</h3><p>Levels and XP only ever grow. Every day starts with a fresh companion.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="companion" style="padding-top:40px">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Your companion</p>
+      <h2 class="reveal">A little friend that grows with your day</h2>
+      <p class="lead reveal">It floats on your screen, naps while you rest, and reacts when you click it: a hop, a full 3D spin, or hearts. Each one has its own sounds.</p>
+      <div class="companions reveal"><img src="screenshots/companions.png" width="1560" height="600" alt="The three companions: Tree, Clouda and Hunter"></div>
+      <div class="names">
+        <div class="reveal"><h3>Tree 🌳</h3><p>Grows through the day on a floating island, blossoms, and fruits on perfect blocks.</p></div>
+        <div class="reveal"><h3>Clouda ☁️</h3><p>A soft cloud spirit that glows brighter as your day fills up.</p></div>
+        <div class="reveal"><h3>Hunter ⚡</h3><p>Bulks up as you level, with an aura that changes colour from rank E to S.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="floating" style="padding-top:40px">
+    <div class="wrap grid2">
+      <div class="reveal">
+        <div class="pair">
+          <img class="pet" src="screenshots/floating-pet.png" width="520" height="600" alt="The floating pet on Windows">
+          <img class="barimg" src="screenshots/floating-bar.png" width="1280" height="272" alt="The wider bar with the current activity and time left">
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow reveal">On your computer</p>
+        <h2 class="reveal">Always there, never in the way</h2>
+        <ul class="feature-list">
+          <li class="reveal"><b>Drag it anywhere.</b> Click to play, double-click for the wider bar.</li>
+          <li class="reveal"><b>Right-click to hide it</b>, stop the block or quit. A hidden pet comes back by itself when the block ends.</li>
+          <li class="reveal"><b>A ring in the tray</b> fills as the block runs.</li>
+          <li class="reveal"><b>Starts with Windows</b> and asks what's first.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="wrap grid2" style="margin-top:110px">
+      <div>
+        <p class="eyebrow reveal">On your phone</p>
+        <h2 class="reveal">Your pet comes along</h2>
+        <ul class="feature-list">
+          <li class="reveal"><b>Floats over your apps</b> in a ring that fills as the block runs. Long-press for the menu.</li>
+          <li class="reveal"><b>A live notification</b>: rate your block right from it, or quit while resting.</li>
+          <li class="reveal"><b>A check-in pops up</b> when a block ends, even when the phone is asleep.</li>
+          <li class="reveal"><b>A home-screen widget</b> and a calm full-screen focus view.</li>
+        </ul>
+      </div>
+      <div class="reveal"><div class="phone"><img src="screenshots/phone-now.png" width="800" height="1720" alt="Fifteen on an Android phone"></div></div>
+    </div>
+  </section>
+
+  <section id="addons" style="padding-top:40px">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Add-ons</p>
+      <h2 class="reveal">Little helpers, from your pet</h2>
+      <p class="lead reveal">Optional chats that come right out of your floating companion. Turn them on in Settings, and pick anytime or only during blocks.</p>
+      <div class="addons">
+        <figure class="reveal"><img src="screenshots/addon-eye-break.png" width="1120" height="600" alt="An eye break with a 20-second timer, coming from the floating tree" loading="lazy"><figcaption><h3>Eye breaks</h3><p>The 20-20-20 rule, with a small 20-second timer.</p></figcaption></figure>
+        <figure class="reveal"><img src="screenshots/addon-water.png" width="1120" height="600" alt="The tree asking whether you drank some water" loading="lazy"><figcaption><h3>Water</h3><p>A reminder, then a friendly "did you drink?" later.</p></figcaption></figure>
+        <figure class="reveal"><img src="screenshots/addon-rest.png" width="1120" height="600" alt="While you rest, the tree wakes up and checks on you" loading="lazy"><figcaption><h3>While you rest</h3><p>Your sleeping pet wakes up and asks if you're okay.</p></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="insights" style="padding-top:40px">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Insights</p>
+      <h2 class="reveal">The whole picture, without the judgement</h2>
+      <p class="lead reveal">Focused time, average focus, comebacks, your best hours and days, where your time went, and a garden that keeps every day you grew.</p>
+      <div class="fade-shot reveal"><img src="screenshots/app-insights.png" width="1920" height="2220" alt="Insights: focused time, points per day, focus quality and where the time went" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section id="download" class="download">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Download</p>
+      <h2 class="reveal">Start your first fifteen</h2>
+      <p class="lead reveal">Free for personal use. Works offline on one device straight away.</p>
+      <div class="dl">
+        <div class="card reveal">
+          <div class="os"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7.1L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg><h3>Windows 10 and 11</h3></div>
+          <p class="muted">Unzip anywhere, for example in <code>%LOCALAPPDATA%\Programs\Fifteen</code>, and run <code>Fifteen.exe</code>.</p>
+          <a class="btn btn-primary" href="https://github.com/cyberianzed/Fifteen/releases/latest/download/Fifteen-windows.zip">Download for Windows</a>
+        </div>
+        <div class="card reveal">
+          <div class="os"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.86 3.22a11.4 11.4 0 0 0-9.84 0L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52M7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5m10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5"/></svg><h3>Android 8 and newer</h3></div>
+          <p class="muted">Open the APK on your phone and allow installing. Allow <i>display over other apps</i> so your pet can float.</p>
+          <a class="btn btn-primary" href="https://github.com/cyberianzed/Fifteen/releases/latest/download/Fifteen.apk">Download for Android</a>
+        </div>
+      </div>
+      <p class="muted reveal" style="margin-top:28px;font-size:15px">Want the same timer on both? Connect your own free Supabase database in a few minutes. <a href="https://github.com/cyberianzed/Fifteen#2-sync-your-phone-and-computer-optional-about-5-minutes" style="color:var(--mellow)">How to sync →</a></p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap center">
+      <p class="eyebrow reveal">Questions</p>
+      <h2 class="reveal">Good to know</h2>
+      <div class="faq" style="text-align:left">
+        <details class="reveal"><summary>Is Fifteen free?</summary><p>Yes. It's free for personal use on Windows and Android, with no ads, no tracking and no account.</p></details>
+        <details class="reveal"><summary>Is it good for ADHD?</summary><p>It was made for it. You only commit to the next 15 minutes, a rough block never costs points, and drifting then coming back earns a double-points comeback.</p></details>
+        <details class="reveal"><summary>How is it different from a Pomodoro timer?</summary><p>Instead of a strict work and break cycle, Fifteen asks how each block went, rewards honesty, and shows where your time and focus actually went, with a companion floating on your screen.</p></details>
+        <details class="reveal"><summary>Can I sync my phone and computer?</summary><p>Yes, optionally, through your own free Supabase database. Stopping a block on one device stops it on the other within seconds.</p></details>
+        <details class="reveal"><summary>Where is my data?</summary><p>On your devices, and in your own Supabase project if you turn on sync. Nobody else sees it.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="support" style="padding-top:20px">
+    <div class="wrap">
+      <div class="card reveal">
+        <p class="eyebrow">Support</p>
+        <h2>Made by one person, with care</h2>
+        <p class="lead" style="margin:0 auto">If Fifteen helps you focus, say hi and support the project.</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.7 19.4c-.2 1.1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.2 13 1.4 11.5c-1-.3-1.1-1 .2-1.5L20.5 2.7c.9-.3 1.6.2 1.4 1.6z"/></svg>
+            Support on Telegram
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/cyberianzed/Fifteen">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#top" style="font-size:17px"><img src="favicon.svg" alt="" style="width:22px;height:22px">fifteen.</a>
+    <div class="flinks">
+      <a href="https://github.com/cyberianzed/Fifteen/releases/latest">Releases</a>
+      <a href="https://github.com/cyberianzed/Fifteen">Source</a>
+      <a href="https://github.com/cyberianzed/Fifteen/blob/main/CONTRIBUTING.md">Contribute</a>
+      <a href="https://github.com/cyberianzed/Fifteen/blob/main/LICENSE">License</a>
+      <a href="https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project">Support</a>
+    </div>
+    <span>© 2026 Jose K James · free for personal use</span>
+  </div>
+</footer>
+
+<script>
+  // Soft fade-up as sections come into view.
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  // Hairline under the nav once you scroll.
+  const nav = document.getElementById('nav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 10), { passive: true });
+  // On Android, offer the APK first.
+  if (/Android/i.test(navigator.userAgent)) {
+    const w = document.getElementById('dl-win'), a = document.getElementById('dl-android');
+    a.classList.replace('btn-ghost', 'btn-primary'); w.classList.replace('btn-primary', 'btn-ghost');
+    a.parentNode.insertBefore(a, w);
+  }
+</script>
+</body>
+</html>
