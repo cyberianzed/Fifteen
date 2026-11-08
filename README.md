@@ -122,7 +122,8 @@ They come **anytime** your pet is out, or **only during blocks** if you prefer. 
 
 Go to [**Releases**](../../releases/latest) and download:
 
-- **Windows:** `Fifteen-windows.zip`. Unzip it anywhere (for example `C:\Users\you\AppData\Local\Programs\Fifteen`) and run `Fifteen.exe`.
+- **Windows:** `Fifteen-Setup.exe`. Run it and follow the steps (no admin needed). Prefer no installer? Download `Fifteen-windows.zip`, **extract it first** (right-click → *Extract All…*), and run `Fifteen.exe` from the extracted folder.
+  If Windows shows *"Windows protected your PC"*, click **More info → Run anyway**.
 - **Android:** `Fifteen.apk`. Open it on your phone and allow installing from your browser or files app.
 
 On the phone, allow **display over other apps** when asked, so your pet can float. If the timer or pet ever stops by itself, open the **Keep it running** box at the bottom of Settings and tap **Allow background running**. On Xiaomi, Oppo, Vivo, Realme or Samsung, also turn on *Autostart* and *No restrictions* in the phone's app settings.

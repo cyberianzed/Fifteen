@@ -30,4 +30,4 @@ Build: `./gradlew.bat :composeApp:desktopTest` (tests + screenshots in `composeA
 `docs/screenshots`), `:composeApp:run`, `:composeApp:assembleDebug`, `:composeApp:createDistributable`.
 Public releases: add `-Pfifteen.public=true` so the owner's Supabase URL/key are NOT baked in, then
 `:composeApp:assembleRelease` (signed with the key named in `local.properties`) and zip the `createDistributable` folder.
-Check the outputs contain no Supabase URL before uploading. `packageMsi` currently fails in WiX (light.exe exit 216).
+Check the outputs contain no Supabase URL before uploading. Windows installer: `packaging/windows/fifteen.iss` (Inno Setup 6, `ISCC.exe /DAppVersion=x.y.z`) wraps the `createDistributable` folder into `composeApp/build/installer/Fifteen-Setup.exe`; ship it next to the zip. jpackage's `packageMsi`/`packageExe` fail (WiX light.exe exit 216: ICE validation needs VBScript, which this Windows build lacks).
