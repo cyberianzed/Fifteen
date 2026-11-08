@@ -59,9 +59,12 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
     private var owner: OverlayOwner? = null
     private var target: CloseTarget? = null
     private val d = ctx.resources.displayMetrics.density
-    // Where the bubble sits; remembered when you drag it somewhere else.
-    private var posX = (10 * d).toInt()
+    // Which edge the bubble sits on and how far down; remembered when you drag it somewhere else.
+    private var right = false
     private var posY = (90 * d).toInt()
+    private val margin = (6 * d).toInt()
+    private val collapsed = androidx.compose.runtime.mutableStateOf(false)
+    private val mirrored = androidx.compose.runtime.mutableStateOf(false)
 
     fun update() {
         val db = store.db.value
@@ -76,7 +79,9 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT,
-        ).apply { gravity = Gravity.TOP or Gravity.START; x = posX; y = posY }
+        ).apply { gravity = Gravity.TOP or (if (right) Gravity.END else Gravity.START); x = margin; y = posY }
+        collapsed.value = false
+        mirrored.value = right
         val o = OverlayOwner().also { it.start() }
         val compose = ComposeView(ctx).apply {
             setViewTreeLifecycleOwner(o)
@@ -84,14 +89,25 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             setContent {
                 NimishamTheme {
-                    Box(Modifier.padding(6.dp)) { NudgeBubble(store, maxWidth = 320.dp) }
+                    Box(Modifier.padding(6.dp)) {
+                        NudgeBubble(store, maxWidth = 320.dp, mirrored = mirrored.value, collapsed = collapsed.value)
+                    }
                 }
             }
         }
         lateinit var frame: DragFrame
         frame = DragFrame(
             ctx,
-            onStart = { showTarget() },
+            onStart = { rawX, rawY ->
+                // Messages hide; the companion alone follows the finger like a chat head.
+                collapsed.value = true
+                val head = (64 * d).toInt()
+                lp.gravity = Gravity.TOP or Gravity.START
+                lp.x = rawX.toInt() - head / 2
+                lp.y = rawY.toInt() - head / 2
+                runCatching { wm.updateViewLayout(frame, lp) }
+                showTarget()
+            },
             onMove = { dx, dy ->
                 lp.x += dx.toInt(); lp.y += dy.toInt()
                 runCatching { wm.updateViewLayout(frame, lp) }
@@ -103,7 +119,16 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
                 if (close) {
                     store.nudges.answer("close")
                 } else {
-                    posX = lp.x; posY = lp.y
+                    // Snap to the nearer edge; messages open towards the middle of the screen.
+                    val dm = ctx.resources.displayMetrics
+                    right = lp.x + frame.width / 2 > dm.widthPixels / 2
+                    posY = lp.y.coerceIn((24 * d).toInt(), (dm.heightPixels - 360 * d).toInt())
+                    lp.gravity = Gravity.TOP or (if (right) Gravity.END else Gravity.START)
+                    lp.x = margin
+                    lp.y = posY
+                    mirrored.value = right
+                    collapsed.value = false
+                    runCatching { wm.updateViewLayout(frame, lp) }
                 }
             },
         ).apply {
@@ -158,7 +183,7 @@ class NudgeOverlay(private val ctx: Context, private val store: Store) {
 @SuppressLint("ViewConstructor", "ClickableViewAccessibility")
 private class DragFrame(
     ctx: Context,
-    private val onStart: () -> Unit,
+    private val onStart: (Float, Float) -> Unit,
     private val onMove: (Float, Float) -> Unit,
     private val onRelease: () -> Unit,
 ) : FrameLayout(ctx) {
@@ -173,7 +198,7 @@ private class DragFrame(
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; dragging = false }
             MotionEvent.ACTION_MOVE -> if (!dragging && kotlin.math.hypot(e.rawX - downX, e.rawY - downY) > slop) {
-                dragging = true; lastX = e.rawX; lastY = e.rawY; onStart()
+                dragging = true; lastX = e.rawX; lastY = e.rawY; onStart(e.rawX, e.rawY)
             }
         }
         return dragging
@@ -185,7 +210,7 @@ private class DragFrame(
             MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; dragging = false }
             MotionEvent.ACTION_MOVE -> {
                 if (!dragging && kotlin.math.hypot(e.rawX - downX, e.rawY - downY) > slop) {
-                    dragging = true; lastX = e.rawX; lastY = e.rawY; onStart()
+                    dragging = true; lastX = e.rawX; lastY = e.rawY; onStart(e.rawX, e.rawY)
                 }
                 if (dragging) { onMove(e.rawX - lastX, e.rawY - lastY); lastX = e.rawX; lastY = e.rawY }
             }

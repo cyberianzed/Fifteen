@@ -53,7 +53,16 @@ import kotlin.math.sin
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean = true, maxWidth: Dp = 360.dp) {
+fun NudgeBubble(
+    store: Store,
+    modifier: Modifier = Modifier,
+    showAvatar: Boolean = true,
+    maxWidth: Dp = 360.dp,
+    /** Companion on the right with messages lined up towards it (for a bubble sitting on the right edge). */
+    mirrored: Boolean = false,
+    /** Only the companion, like a chat head (while it's being dragged). */
+    collapsed: Boolean = false,
+) {
     val db by store.db.collectAsState()
     val prefs by store.prefs.collectAsState()
     if (!store.nudges.visible(db, prefs)) return
@@ -65,12 +74,20 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
     val typing = shown < step.messages.size
     val done = !typing
 
+    val avatar: @Composable () -> Unit = {
+        PetView(db.profile.avatar, PetState(0.8f, 2, asleep = false, level = levelFor(store.totalXp(db))), Modifier.size(52.dp), interactive = false)
+    }
+    if (collapsed) {
+        Box(modifier) { avatar() }
+        return
+    }
+    val side = if (mirrored) Alignment.End else Alignment.Start
     Row(modifier.widthIn(max = maxWidth), verticalAlignment = Alignment.Bottom) {
-        if (showAvatar) {
-            PetView(db.profile.avatar, PetState(0.8f, 2, asleep = false, level = levelFor(store.totalXp(db))), Modifier.size(52.dp), interactive = false)
+        if (showAvatar && !mirrored) {
+            avatar()
             Spacer(Modifier.width(6.dp))
         }
-        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = side) {
             // Solid pill so the name and close button stay readable over any wallpaper or window.
             Row(
                 Modifier.clip(RoundedCornerShape(50)).background(Color(0xE6121318)).padding(start = 10.dp, end = 2.dp),
@@ -85,7 +102,7 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
             for (i in 0 until shown) {
                 androidx.compose.runtime.key(a.id, a.stage, i) {
                     AnimatedVisibility(true, enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { it / 3 }) {
-                        ChatBubble(step.messages[i])
+                        ChatBubble(step.messages[i], mirrored)
                     }
                 }
             }
@@ -95,7 +112,7 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
                 RingTimer(1f - (a.timerEnd - now).coerceAtLeast(0) / (step.timerSec * 1000f), "$left")
             }
             if (done && step.buttons.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, if (mirrored) Alignment.End else Alignment.Start), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     step.buttons.forEachIndexed { i, (label, action) ->
                         Box(
                             Modifier.clip(RoundedCornerShape(50))
@@ -110,14 +127,21 @@ fun NudgeBubble(store: Store, modifier: Modifier = Modifier, showAvatar: Boolean
                 }
             }
         }
+        if (showAvatar && mirrored) {
+            Spacer(Modifier.width(6.dp))
+            avatar()
+        }
     }
 }
 
 @Composable
-private fun ChatBubble(text: String) {
+private fun ChatBubble(text: String, mirrored: Boolean = false) {
+    // The small corner points at the companion.
+    val shape = if (mirrored) RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 4.dp, bottomStart = 16.dp)
+    else RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp)
     Box(
-        Modifier.clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp))
-            .background(Color(0xF21E2129)).border(1.dp, Color(0x1FFFFFFF), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 4.dp))
+        Modifier.clip(shape)
+            .background(Color(0xF21E2129)).border(1.dp, Color(0x1FFFFFFF), shape)
             .padding(horizontal = 13.dp, vertical = 9.dp),
     ) {
         Text(text, color = Ink.text, fontSize = 13.5.sp, lineHeight = 19.sp)
