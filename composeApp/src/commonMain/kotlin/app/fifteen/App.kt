@@ -61,8 +61,9 @@ interface PlatformUi {
 
 enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Addons("Add-ons"), Garden("Garden"), Settings("Settings") }
 
+/** [insightsOffset]: which week Insights opens on (screenshots use last week, which is always full). */
 @Composable
-fun FifteenApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now) {
+fun FifteenApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now, insightsOffset: Int = 0) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     var focusMode by remember { mutableStateOf(false) }
     LaunchedEffect(focusMode) { platform.keepScreenOn(focusMode) }
@@ -77,11 +78,11 @@ fun FifteenApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now) {
                 if (wide) {
                     Row(Modifier.fillMaxSize()) {
                         NavRail(tab, addons) { tab = it }
-                        Box(Modifier.weight(1f).fillMaxHeight()) { TabContent(tab, store, platform, wide = true) { focusMode = true } }
+                        Box(Modifier.weight(1f).fillMaxHeight()) { TabContent(tab, store, platform, wide = true, insightsOffset) { focusMode = true } }
                     }
                 } else {
                     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-                        Box(Modifier.weight(1f)) { TabContent(tab, store, platform, wide = false) { focusMode = true } }
+                        Box(Modifier.weight(1f)) { TabContent(tab, store, platform, wide = false, insightsOffset) { focusMode = true } }
                         BottomNav(tab, addons) { tab = it }
                     }
                 }
@@ -92,11 +93,11 @@ fun FifteenApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now) {
 }
 
 @Composable
-private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boolean, onFocus: () -> Unit) {
+private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boolean, insightsOffset: Int, onFocus: () -> Unit) {
     AnimatedContent(tab, transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) }) { t ->
         when (t) {
             Tab.Now -> NowScreen(store, platform, wide, onFocus)
-            Tab.Insights -> InsightsScreen(store, wide)
+            Tab.Insights -> InsightsScreen(store, wide, insightsOffset)
             Tab.Addons -> AddonsScreen(store, wide)
             Tab.Garden -> GardenScreen(store, wide)
             Tab.Settings -> SettingsScreen(store, platform, wide)

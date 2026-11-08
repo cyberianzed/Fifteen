@@ -43,10 +43,10 @@ private fun rangeFor(period: Int, offset: Int, today: Int): DayRange = when (per
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun InsightsScreen(store: Store, wide: Boolean) {
+fun InsightsScreen(store: Store, wide: Boolean, initialOffset: Int = 0) {
     val v = rememberView(store, 30_000)
     var period by remember { mutableIntStateOf(1) }
-    var offset by remember { mutableIntStateOf(0) }
+    var offset by remember { mutableIntStateOf(initialOffset) }
     val range = rangeFor(period, offset, v.today)
     val s = remember(v.db, range) { computeInsights(v.db, range) }
     val goal = v.db.profile.dailyGoal

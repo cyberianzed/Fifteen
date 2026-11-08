@@ -108,7 +108,7 @@ class ScreenshotTest {
             listOf(androidx.compose.ui.graphics.Color(0xFF1F2A44), androidx.compose.ui.graphics.Color(0xFF3B2F5C), androidx.compose.ui.graphics.Color(0xFF6B4A5E)),
         )
         doc("app-now", 1280, 860, 1.5f) { FifteenApp(store, platform, Tab.Now) }
-        doc("app-insights", 1280, 1480, 1.5f) { FifteenApp(store, platform, Tab.Insights) }
+        doc("app-insights", 1280, 1480, 1.5f) { FifteenApp(store, platform, Tab.Insights, insightsOffset = -1) }
         doc("app-garden", 1280, 1180, 1.5f) { FifteenApp(store, platform, Tab.Garden) }
         doc("phone-now", 400, 860, 2f) { FifteenApp(store, platform, Tab.Now) }
         doc("floating-bar", 640, 136, 2f) {
