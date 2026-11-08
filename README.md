@@ -24,15 +24,11 @@ No guilt, no lost points, just a little companion (Tree, Clouda or Hunter) cheer
 ## How it works
 
 1. **Pick what you're doing**, like Deep work, Learning or Admin, plus an optional "one thing" for this block.
-2. **Work.** A calm progress bar floats on top of your screen with the time left and a short quote.
+2. **Work.** Your companion floats on top of your screen with the time left. Double-click it for a wider bar with a short quote.
 3. **Check in** when the block ends. How focused were you? ✕ drifted · 50 · 75 · 90 · 100.
 4. **See what you earned**, and maybe find an artifact. Then choose the next block: 15, 30 or 60 minutes.
 
-<p align="center">
-  <img src="docs/screenshots/checkin-rate.png" alt="Check-in: how did that block go?" width="420">
-  &nbsp;
-  <img src="docs/screenshots/checkin-reward.png" alt="Points, bonuses and a found artifact" width="300">
-</p>
+<p align="center"><img src="docs/screenshots/checkin-rate.png" alt="Check-in: how did that block go?" width="460"></p>
 
 ## Points that never punish you
 
@@ -47,13 +43,13 @@ Fifteen is built on one rule: **a rough block never costs you anything.**
 
 ## Your companion
 
-Pick one in the **Garden**. It sleeps when you're not tracking, grows with your day, and reacts when you click it: a hop, a full 3D spin, or hearts. Each one has its own little sounds, which you can turn off in Settings.
+Pick one in the **Garden**. It floats on your screen, grows with your day, naps while you rest, and reacts when you click it: a hop, a full 3D spin, or hearts. Each one has its own little sounds, which you can turn off in Settings.
 
 <p align="center"><img src="docs/screenshots/companions.png" alt="Tree, Clouda the cloud, and Hunter" width="780"></p>
 
 | | |
 |---|---|
-| **Tree** 🌳 | A tree on a floating island that grows, blossoms and fruits on perfect blocks |
+| **Tree** 🌳 | A small tree on a floating island that grows through the day, blossoms and fruits on perfect blocks |
 | **Clouda** ☁️ | A cloud spirit that glows brighter as your day fills up |
 | **Hunter** ⚡ | Bulks up as you level, with an aura that changes colour from rank E to S |
 
@@ -90,10 +86,11 @@ See the whole picture without the judgement: focused time, average focus, comeba
 
 <p align="center"><img src="docs/screenshots/app-insights.png" alt="Insights" width="860"></p>
 
-<details>
-<summary><b>Garden: your forest and collection</b></summary>
+## Garden: your forest and collection
+
+Each day adds a companion to your forest, grown by that day's points. Every artifact you find lands in your collection.
+
 <p align="center"><img src="docs/screenshots/app-garden.png" alt="Garden" width="860"></p>
-</details>
 
 ## Add-ons
 
@@ -107,9 +104,12 @@ Little helpers your companion brings up in a chat bubble that comes right out of
 They come **anytime** your pet is out, or **only during blocks** if you prefer. Hide the pet and they stay quiet.
 
 <p align="center">
-  <img src="docs/screenshots/soon-eye-break.png" alt="Eye break chat with a 20-second timer" width="360">
+  <img src="docs/screenshots/addon-eye-break.png" alt="An eye break coming out of the floating tree, with a 20-second timer" width="420">
   &nbsp;
-  <img src="docs/screenshots/soon-water.png" alt="Water check-in chat" width="360">
+  <img src="docs/screenshots/addon-water.png" alt="The tree asking if you drank some water" width="420">
+</p>
+<p align="center">
+  <img src="docs/screenshots/addon-rest.png" alt="While you rest, the tree wakes up and checks on you" width="420">
 </p>
 
 **Have an idea for an add-on?** See [Contributing](#contributing).

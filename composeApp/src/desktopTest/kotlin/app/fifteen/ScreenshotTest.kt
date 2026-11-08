@@ -3,6 +3,7 @@ package app.fifteen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -135,7 +136,6 @@ class ScreenshotTest {
         val due = seededStore(Phase.Due)
         doc("checkin-rate", 600, 460, 2f) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
         due.rate("live", 100)
-        doc("checkin-reward", 600, 720, 2f) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
         doc("companions", 780, 300, 2f) {
             FifteenTheme {
                 Row(Modifier.fillMaxSize().background(Ink.bg).padding(10.dp)) {
@@ -192,6 +192,42 @@ class ScreenshotTest {
             stage(k, st, timer)
             shot("chat-$k-$st", 420, 330) { FifteenTheme { Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF2C3550)).padding(10.dp)) { NudgeBubble(store) } } }
         }
+    }
+
+    /** README: add-on chats coming out of the floating pet, over a desktop-like wallpaper. */
+    @Test
+    fun addonDocShots() {
+        val docs = File("../docs/screenshots").apply { mkdirs() }
+        val wallpaper = androidx.compose.ui.graphics.Brush.linearGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF1F2A44), androidx.compose.ui.graphics.Color(0xFF3B2F5C), androidx.compose.ui.graphics.Color(0xFF6B4A5E)),
+        )
+        fun scene(name: String, phase: Phase, kind: String, stage: String, timerSec: Int = 0) {
+            val store = seededStore(phase)
+            store.updateProfile { it.copy(addons = true) }
+            val now = nowMs()
+            store.mutateDb { it.copy(nudge = it.nudge.copy(active = ActiveNudge("doc-$kind-$stage", kind, stage, now - 20_000, if (timerSec > 0) now + timerSec * 1000L else 0))) }
+            val density = 2f
+            ImageComposeScene((560 * density).toInt(), (300 * density).toInt(), Density(density)) {
+                FifteenTheme {
+                    val v = rememberView(store)
+                    Box(Modifier.fillMaxSize().background(wallpaper).padding(16.dp), contentAlignment = Alignment.TopEnd) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Box(Modifier.padding(top = 40.dp)) { NudgeBubble(store, showAvatar = false, maxWidth = 330.dp, mirrored = true) }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                PetView(v.db.profile.avatar, v.petState(), Modifier.size(170.dp), interactive = false)
+                                MiniTimer(v)
+                            }
+                        }
+                    }
+                }
+            }.use { sc ->
+                sc.render(0); sc.render(1_500_000_000L)
+                File(docs, "$name.png").writeBytes(sc.render(4_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+            }
+        }
+        scene("addon-eye-break", Phase.Running, "eye", "timer", timerSec = 14)
+        scene("addon-water", Phase.Running, "water", "ask2")
+        scene("addon-rest", Phase.Idle, "rest", "ask")
     }
 
     @Test
