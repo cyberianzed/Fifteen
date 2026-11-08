@@ -26,7 +26,7 @@
             android:textSize="14sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:text="Nimisham" />
+            android:text="Fifteen" />
         <Chronometer
             android:id="@+id/widget_timer"
             android:layout_width="wrap_content"

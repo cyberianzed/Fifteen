@@ -1,15 +1,15 @@
 <div align="center">
 
-# Nimisham · നിമിഷം
+# fifteen.
 
 **A gentle 15-minute focus tracker for Windows and Android, with a companion that grows as you work.**
 
 Every 15 minutes it asks one question: *how did that go?* Tap a rating, pick what's next, and keep going.
-No guilt, no lost points, just a little tree (or spirit, or hunter) cheering you on.
+No guilt, no lost points, just a little companion (Tree, Clouda or Hunter) cheering you on.
 
 [**Download for Windows and Android →**](../../releases/latest)
 
-<img src="docs/screenshots/app-now.png" alt="Nimisham main screen" width="860">
+<img src="docs/screenshots/app-now.png" alt="Fifteen main screen" width="860">
 
 </div>
 
@@ -36,7 +36,7 @@ No guilt, no lost points, just a little tree (or spirit, or hunter) cheering you
 
 ## Points that never punish you
 
-Nimisham is built on one rule: **a rough block never costs you anything.**
+Fifteen is built on one rule: **a rough block never costs you anything.**
 
 - **Drifted?** You still get **+1** for noticing it honestly, and your next good block counts **double** (a *comeback*).
 - **Momentum:** good blocks back to back earn ×1.2, then ×1.5. A drift only pauses it.
@@ -49,12 +49,12 @@ Nimisham is built on one rule: **a rough block never costs you anything.**
 
 Pick one in the **Garden**. It sleeps when you're not tracking, grows with your day, and reacts when you click it: a hop, a full 3D spin, or hearts. Each one has its own little sounds, which you can turn off in Settings.
 
-<p align="center"><img src="docs/screenshots/companions.png" alt="Maram the tree, Pulli the cloud spirit, and the Hunter" width="780"></p>
+<p align="center"><img src="docs/screenshots/companions.png" alt="Tree, Clouda the cloud, and Hunter" width="780"></p>
 
 | | |
 |---|---|
-| **Maram** 🌳 | A tree on a floating island that grows, blossoms and fruits on perfect blocks |
-| **Pulli** ☁️ | A cloud spirit that glows brighter as your day fills up |
+| **Tree** 🌳 | A tree on a floating island that grows, blossoms and fruits on perfect blocks |
+| **Clouda** ☁️ | A cloud spirit that glows brighter as your day fills up |
 | **Hunter** ⚡ | Bulks up as you level, with an aura that changes colour from rank E to S |
 
 ## On your computer
@@ -72,7 +72,7 @@ A thin bar stays on top of every window. **Drag it anywhere. Double-click it** t
 
 ## On your phone
 
-<img align="right" src="docs/screenshots/phone-now.png" alt="Nimisham on a phone" width="250">
+<img align="right" src="docs/screenshots/phone-now.png" alt="Fifteen on a phone" width="250">
 
 - **A permanent notification** with a live countdown. Rate your block straight from it (100% · 75% · Drifted) and keep going.
 - **A check-in pops up** when a block ends, even when the phone is asleep.
@@ -118,8 +118,8 @@ Want to try them early? They're on the [`addons`](../../tree/addons) branch. **H
 
 Go to [**Releases**](../../releases/latest) and download:
 
-- **Windows:** `Nimisham-windows.zip`. Unzip it anywhere (for example `C:\Users\you\AppData\Local\Programs\Nimisham`) and run `Nimisham.exe`.
-- **Android:** `Nimisham.apk`. Open it on your phone and allow installing from your browser or files app.
+- **Windows:** `Fifteen-windows.zip`. Unzip it anywhere (for example `C:\Users\you\AppData\Local\Programs\Fifteen`) and run `Fifteen.exe`.
+- **Android:** `Fifteen.apk`. Open it on your phone and allow installing from your browser or files app.
 
 On the phone, open **Settings → On this phone** and tap **Allow background running**, so the timer is never stopped to save battery. On Xiaomi, Oppo, Vivo, Realme or Samsung, also turn on *Autostart* and *No restrictions* in the phone's app settings.
 
@@ -133,7 +133,7 @@ To have the same timer on both, so that stopping on one stops on the other, conn
 2. Open **SQL Editor → New query**, paste [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
 3. Open **Authentication → Users → Add user**, enter your email and a password, and tick *Auto Confirm User*.
 4. Open **Project Settings → API Keys** and copy the **Project URL** and the **publishable key**.
-5. In Nimisham, go to **Settings → Sync**, paste the URL and key, and sign in with your email and password. Do the same on your other device.
+5. In Fifteen, go to **Settings → Sync**, paste the URL and key, and sign in with your email and password. Do the same on your other device.
 
 Changes show up on the other device within a few seconds.
 
@@ -141,7 +141,7 @@ Changes show up on the other device within a few seconds.
 
 ## Use this project
 
-Nimisham is open source (MIT). Use it as it is, change it to fit you, or borrow ideas for your own app.
+Fifteen is open source (MIT). Use it as it is, change it to fit you, or borrow ideas for your own app.
 
 **Build it yourself.** You need JDK 17+ and the Android SDK (put `sdk.dir=...` in `local.properties`).
 

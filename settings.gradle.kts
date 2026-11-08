@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Nimisham"
+rootProject.name = "Fifteen"
 include(":composeApp")

@@ -1,10 +1,10 @@
 <resources>
-    <style name="Theme.Nimisham" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Fifteen" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/ink</item>
         <item name="android:statusBarColor">@color/ink</item>
         <item name="android:navigationBarColor">@color/ink</item>
     </style>
-    <style name="Theme.Nimisham.Dialog" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Fifteen.Dialog" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>

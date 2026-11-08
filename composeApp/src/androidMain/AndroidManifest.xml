@@ -13,11 +13,11 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
-        android:name=".NimishamApplication"
-        android:label="Nimisham"
+        android:name=".FifteenApplication"
+        android:label="Fifteen"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:theme="@style/Theme.Nimisham"
+        android:theme="@style/Theme.Fifteen"
         android:allowBackup="false">
 
         <activity
@@ -35,9 +35,9 @@
         <activity
             android:name=".CheckInActivity"
             android:exported="false"
-            android:theme="@style/Theme.Nimisham.Dialog"
+            android:theme="@style/Theme.Fifteen.Dialog"
             android:launchMode="singleTask"
-            android:taskAffinity="app.nimisham.checkin"
+            android:taskAffinity="app.fifteen.checkin"
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:windowSoftInputMode="adjustResize"
@@ -62,7 +62,7 @@
 
         <receiver android:name=".ActionReceiver" android:exported="false" />
 
-        <receiver android:name=".NimishamWidget" android:exported="true" android:label="Nimisham">
+        <receiver android:name=".FifteenWidget" android:exported="true" android:label="Fifteen">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

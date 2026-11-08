@@ -5,21 +5,21 @@ import java.util.Properties
 // Supabase URL/key come from local.properties (never committed) and are baked into both builds,
 // so the phone only needs an email + password to join the shared database.
 val localProps = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
-// Public release builds (-Pnimisham.public=true) leave them out, so each user connects their own project.
-val publicBuild = providers.gradleProperty("nimisham.public").orNull == "true"
+// Public release builds (-Pfifteen.public=true) leave them out, so each user connects their own project.
+val publicBuild = providers.gradleProperty("fifteen.public").orNull == "true"
 val supabaseUrl = if (publicBuild) "" else localProps.getProperty("supabase.url", "").trim()
 val supabaseKey = if (publicBuild) "" else localProps.getProperty("supabase.key", "").trim()
 
-val generateConfig = tasks.register("generateNimishamConfig") {
-    val outDir = layout.buildDirectory.dir("generated/nimisham/kotlin")
+val generateConfig = tasks.register("generateFifteenConfig") {
+    val outDir = layout.buildDirectory.dir("generated/fifteen/kotlin")
     inputs.property("url", supabaseUrl)
     inputs.property("key", supabaseKey)
     outputs.dir(outDir)
     doLast {
-        val file = outDir.get().file("app/nimisham/BuildConfig.kt").asFile
+        val file = outDir.get().file("app/fifteen/BuildConfig.kt").asFile
         file.parentFile.mkdirs()
         file.writeText(
-            "package app.nimisham\n\n" +
+            "package app.fifteen\n\n" +
                 "internal object BakedConfig {\n" +
                 "    const val SUPABASE_URL = \"${supabaseUrl.replace("\"", "")}\"\n" +
                 "    const val SUPABASE_KEY = \"${supabaseKey.replace("\"", "")}\"\n" +
@@ -86,10 +86,10 @@ kotlin {
 }
 
 android {
-    namespace = "app.nimisham"
+    namespace = "app.fifteen"
     compileSdk = 35
     defaultConfig {
-        applicationId = "app.nimisham"
+        applicationId = "app.fifteen"
         minSdk = 26
         targetSdk = 35
         versionCode = 2
@@ -122,17 +122,17 @@ android {
 
 compose.desktop {
     application {
-        mainClass = "app.nimisham.DesktopMainKt"
+        mainClass = "app.fifteen.DesktopMainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
-            packageName = "Nimisham"
+            packageName = "Fifteen"
             packageVersion = "1.0.1"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             windows {
                 menu = true
                 shortcut = true
                 perUserInstall = true
-                menuGroup = "Nimisham"
+                menuGroup = "Fifteen"
                 upgradeUuid = "8E1C4B6A-2D3F-4A9B-B7C1-5F0E9D2A6C38"
             }
             description = "Fifteen-minute focus tracker"

@@ -1,4 +1,4 @@
--- Nimisham shared database. Paste into Supabase → SQL Editor → Run. Safe to run again.
+-- Fifteen shared database. Paste into Supabase → SQL Editor → Run. Safe to run again.
 -- One table holds every record (blocks, categories, profile) as JSON, scoped to the signed-in user.
 
 create table if not exists public.records (

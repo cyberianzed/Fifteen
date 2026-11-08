@@ -1,6 +1,6 @@
-# Contributing to Nimisham
+# Contributing to Fifteen
 
-Thanks for wanting to help! Nimisham is a small, friendly project, so you don't need to be an expert to contribute.
+Thanks for wanting to help! Fifteen is a small, friendly project, so you don't need to be an expert to contribute.
 
 ## Good first contributions
 
