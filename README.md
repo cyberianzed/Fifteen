@@ -94,6 +94,22 @@ See the whole picture without the judgement: focused time, average focus, comeba
 <p align="center"><img src="docs/screenshots/app-garden.png" alt="Garden" width="860"></p>
 </details>
 
+## Coming soon: Add-ons
+
+Little helpers your companion brings up in a chat bubble while you work. They're optional and switched on in Settings.
+
+- **Eye breaks (20-20-20):** every 20 minutes, look about 6 metres away for 20 seconds, with a small timer beside your block timer.
+- **Water:** a reminder, then a friendly "did you drink?" later. It tells you how much is a good amount and offers to remind you again.
+- **Check-ins:** "Everything okay? Feeling productive?" If not, a small idea to reset, like a stretch, a walk or some water.
+
+<p align="center">
+  <img src="docs/screenshots/soon-eye-break.png" alt="Eye break chat with a 20-second timer" width="360">
+  &nbsp;
+  <img src="docs/screenshots/soon-water.png" alt="Water check-in chat" width="360">
+</p>
+
+Want to try them early? They're on the [`addons`](../../tree/addons) branch. **Have an idea for an add-on?** See [Contributing](#contributing).
+
 ---
 
 ## Get started
@@ -144,7 +160,9 @@ Nimisham is open source (MIT). Use it as it is, change it to fit you, or borrow 
 - `Sound.kt`: the sound effects, also made in code
 - `Model.kt`: default categories and colours
 
-Ideas, bug reports and pull requests are welcome.
+## Contributing
+
+Ideas, bug reports and pull requests are all welcome. **Add-ons are a great first contribution:** posture reminders, stretch breaks, a "stand up" nudge, breathing exercises, or anything that helps people focus kindly. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started.
 
 ## Privacy
 
