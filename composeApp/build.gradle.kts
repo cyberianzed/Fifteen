@@ -92,8 +92,8 @@ android {
         applicationId = "app.nimisham"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
     signingConfigs {
         localProps.getProperty("release.storeFile")?.let { path ->
@@ -126,7 +126,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Nimisham"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             windows {
                 menu = true
