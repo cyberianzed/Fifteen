@@ -67,6 +67,7 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.system.exitProcess
 
 private const val INSTANCE_PORT = 47615
@@ -172,11 +173,16 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
     }
 
     val petShown = prefs.showBar && !prefs.petHidden
-    if (petShown) FloatingBar(
-        store, v, prefs,
-        onOpen = { if (v.phase == Phase.Running) mainOpen = true else checkInOpen = true },
-        onMenu = { menuAt = it },
-    )
+    // Bumped to rebuild the pet window when Windows leaves it with the wrong display scale.
+    var petWindowGen by remember { mutableIntStateOf(0) }
+    if (petShown) androidx.compose.runtime.key(petWindowGen) {
+        FloatingBar(
+            store, v, prefs,
+            onOpen = { if (v.phase == Phase.Running) mainOpen = true else checkInOpen = true },
+            onMenu = { menuAt = it },
+            onScaleBroken = { petWindowGen++ },
+        )
+    }
 
     // Add-on chat: the floating companion itself talks; the bubble comes out of it.
     val anchor = barBounds.value
@@ -334,7 +340,10 @@ private fun PetMenu(at: java.awt.Point, onDismiss: () -> Unit, items: List<Pair<
  * companion makes it react; drag anywhere to move it.
  */
 @Composable
-private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> Unit, onMenu: (java.awt.Point) -> Unit) {
+private fun FloatingBar(
+    store: Store, v: View, prefs: LocalPrefs, onOpen: () -> Unit, onMenu: (java.awt.Point) -> Unit,
+    onScaleBroken: () -> Unit,
+) {
     val petMode = prefs.showPet && prefs.barMode == "pet"
     val barW = 460
     val petW = if (prefs.showPet) 104 else 0
@@ -346,6 +355,9 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
     var poke by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     var pendingOpen by remember { mutableStateOf<Job?>(null) }
+    // The scale Compose draws with. After the monitor sleeps or reconnects, Windows can leave this window
+    // believing it's at 100% while it's drawn at the screen's real scale (125% etc.), which cut off the timer.
+    var drawScale by remember { mutableStateOf(0f) }
     // A little hop when it starts talking.
     val talking = v.db.nudge.active?.id
     LaunchedEffect(talking) { if (talking != null && store.nudges.visible(v.db, prefs)) poke++ }
@@ -364,17 +376,21 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
         create = { window },
         dispose = { it.dispose() },
         update = { w ->
-            if (w.width != width || w.height != h) {
+            // Sized for the scale it's really drawn at, so the timer always fits even if the scales disagree.
+            val k = scaleMismatch(w, drawScale)
+            val tw = (width * k).roundToInt()
+            val th = (h * k).roundToInt()
+            if (w.width != tw || w.height != th) {
                 if (w.isVisible && w.width > 0) {
                     // Switching shape: keep the bottom-left corner (where the companion stands) in place.
                     val bottom = w.y + w.height
-                    w.setBounds(w.x, bottom - h, width, h)
+                    w.setBounds(w.x, bottom - th, tw, th)
                     barBounds.value = w.bounds
                 } else {
                     val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
-                    val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - width) / 2
+                    val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - tw) / 2
                     val y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
-                    w.setBounds(x, y, width, h)
+                    w.setBounds(x, y, tw, th)
                     barBounds.value = w.bounds
                 }
             }
@@ -384,6 +400,25 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
         FifteenTheme {
             // Callbacks read the latest state but stay stable, so the gesture detector never restarts mid-drag.
             val density = androidx.compose.ui.platform.LocalDensity.current.density
+            androidx.compose.runtime.SideEffect { if (drawScale != density) drawScale = density }
+            val onScaleBrokenLatest = rememberUpdatedState(onScaleBroken)
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(3_000)
+                    val k = scaleMismatch(window, drawScale)
+                    if (k == 1f) continue
+                    val now = System.currentTimeMillis()
+                    val gc = window.graphicsConfiguration.defaultTransform.scaleX
+                    store.note("pet window scale was $gc but drawn at $drawScale; resized" +
+                        if (now - lastPetRebuild > 5 * 60_000L) " and rebuilt" else "")
+                    if (now - lastPetRebuild > 5 * 60_000L) {
+                        lastPetRebuild = now
+                        onScaleBrokenLatest.value()
+                        break
+                    }
+                    delay(5 * 60_000L)
+                }
+            }
             val onClickLatest = rememberUpdatedState<(Float) -> Unit> { x ->
                     if (petMode || x <= petW * density) poke++
                     else {
@@ -422,6 +457,19 @@ private fun FloatingBar(store: Store, v: View, prefs: LocalPrefs, onOpen: () -> 
             }
         }
     }
+}
+
+private var lastPetRebuild = 0L
+
+/**
+ * How much bigger the window must be than its size in dp: 1 normally, or draw scale / window scale when Windows
+ * left the window on the wrong scale (for example 1.25 / 1.0 after the monitor slept on a 125% screen).
+ */
+private fun scaleMismatch(w: java.awt.Window, drawScale: Float): Float {
+    if (drawScale <= 0f) return 1f
+    val gc = w.graphicsConfiguration?.defaultTransform?.scaleX?.toFloat() ?: return 1f
+    if (gc <= 0f || abs(gc - drawScale) < 0.01f) return 1f
+    return drawScale / gc
 }
 
 /**

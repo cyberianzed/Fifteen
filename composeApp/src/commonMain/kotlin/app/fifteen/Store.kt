@@ -114,6 +114,9 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
         runCatching { files.log(line) }
     }
 
+    /** Notes something worth knowing later in the small log next to the data. */
+    fun note(line: String) { runCatching { files.log(line) } }
+
     private fun markChanged() {
         saveLocked { changes++ }
         saveSignal.trySend(Unit)
