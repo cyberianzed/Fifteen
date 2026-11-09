@@ -20,7 +20,10 @@ data class Reveal(val blockId: String, val rating: Int, val outcome: Outcome, va
  * Local-first: everything works offline; changes are pushed when a connection exists.
  */
 class Store(private val files: TextFiles, private val scope: CoroutineScope) {
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }
+    private val json = Json {
+        ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false
+        allowSpecialFloatingPointValues = true
+    }
 
     private val _db = MutableStateFlow(loadDb())
     val db: StateFlow<LocalDb> = _db.asStateFlow()
@@ -38,8 +41,12 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     internal val kick = Channel<Unit>(Channel.CONFLATED)
 
     private fun loadDb(): LocalDb {
-        val text = files.read("db.json")
-        val db = text?.let { runCatching { json.decodeFromString(LocalDb.serializer(), it) }.getOrNull() }
+        val text = runCatching { files.read("db.json") }.onFailure { logError("read db.json", it) }.getOrNull()
+        val db = text?.let { t ->
+            runCatching { json.decodeFromString(LocalDb.serializer(), t) }
+                .onFailure { logError("decode db.json", it); runCatching { files.backup("db.json") } }
+                .getOrNull()
+        }
         if (db != null) return db
         val now = nowMs()
         val cats = defaultCategories(now)
@@ -47,8 +54,12 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     }
 
     private fun loadPrefs(): LocalPrefs {
-        val p = files.read("prefs.json")?.let { runCatching { json.decodeFromString(LocalPrefs.serializer(), it) }.getOrNull() }
-            ?: LocalPrefs()
+        val text = runCatching { files.read("prefs.json") }.onFailure { logError("read prefs.json", it) }.getOrNull()
+        val p = text?.let { t ->
+            runCatching { json.decodeFromString(LocalPrefs.serializer(), t) }
+                .onFailure { logError("decode prefs.json", it); runCatching { files.backup("prefs.json") } }
+                .getOrNull()
+        } ?: LocalPrefs()
         var out = if (p.deviceId.isBlank()) p.copy(deviceId = newId().take(8)) else p
         // Fifteen 1.1: the big floating pet is the default on both the computer and the phone.
         if (out.version < 2) out = out.copy(barMode = "pet", showPet = true, overlay = true, overlayStyle = "pet", version = 2)
@@ -56,23 +67,61 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     }
 
     // One writer that always saves the latest state, so an older snapshot can never overwrite a newer one.
+    // It never stops: a failed save is logged and retried, and unsaved changes are written at least every 30 s.
     private val saveSignal = Channel<Unit>(Channel.CONFLATED)
+    private var changes = 1L // the first pass writes once, which also tidies files from older versions
+    private var savedChanges = 0L
 
     init {
         scope.launch(Dispatchers.Default) {
-            for (signal in saveSignal) flush()
+            var failures = 0
+            while (true) {
+                try {
+                    val wait = if (failures > 0) minOf(2_000L shl minOf(failures, 4), 30_000L) else 30_000L
+                    withTimeoutOrNull(wait) { saveSignal.receive() }
+                    failures = if (flush()) 0 else failures + 1
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    failures++
+                    logError("save loop", e)
+                }
+            }
         }
     }
 
-    /** Writes the current state to disk now. */
-    fun flush() = saveLocked {
-        files.write("db.json", json.encodeToString(LocalDb.serializer(), _db.value))
-        files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), _prefs.value))
+    /** Writes the current state to disk now if anything changed. Returns false if the save failed (it's retried). */
+    fun flush(): Boolean = saveLocked {
+        val target = changes
+        if (target == savedChanges) return@saveLocked true
+        try {
+            files.write("db.json", json.encodeToString(LocalDb.serializer(), _db.value))
+            files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), _prefs.value))
+            savedChanges = target
+            true
+        } catch (e: Throwable) {
+            logError("save", e)
+            false
+        }
     }
 
-    private fun persistDb() { saveSignal.trySend(Unit) }
+    private var lastError = ""
 
-    private fun persistPrefs() { saveSignal.trySend(Unit) }
+    private fun logError(what: String, e: Throwable) {
+        val line = "$what: ${e::class.simpleName}: ${e.message}"
+        if (line == lastError) return // retries would otherwise repeat the same line every few seconds
+        lastError = line
+        runCatching { files.log(line) }
+    }
+
+    private fun markChanged() {
+        saveLocked { changes++ }
+        saveSignal.trySend(Unit)
+    }
+
+    private fun persistDb() = markChanged()
+
+    private fun persistPrefs() = markChanged()
 
     internal fun mutateDb(changeLocal: Boolean = true, f: (LocalDb) -> LocalDb) {
         _db.update(f)

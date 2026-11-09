@@ -40,6 +40,10 @@ expect suspend fun httpCall(method: String, url: String, headers: Map<String, St
 interface TextFiles {
     fun read(name: String): String?
     fun write(name: String, text: String)
+    /** Adds a line to a small log next to the data (errors only), so a failed save leaves a trace. */
+    fun log(line: String) {}
+    /** Keeps a copy of a file that couldn't be read, so it's never silently replaced. */
+    fun backup(name: String) {}
 }
 
 fun clockText(ms: Long): String {

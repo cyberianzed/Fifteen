@@ -5,6 +5,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -66,18 +69,48 @@ private fun rawCall(method: String, url: String, headers: Map<String, String>, b
         }
 }
 
-/** Atomic writes (temp file + rename) so a crash mid-save never corrupts the log. */
+/**
+ * Atomic writes (temp file + move) so a crash mid-save never corrupts the log. Windows can briefly lock a file
+ * (antivirus, backup or indexing), so a move is retried; if it still fails the error is thrown, never ignored.
+ */
 class DirTextFiles(private val dir: File) : TextFiles {
     init { dir.mkdirs() }
     override fun read(name: String): String? = File(dir, name).takeIf { it.exists() }?.readText(Charsets.UTF_8)
+
     @Synchronized
     override fun write(name: String, text: String) {
-        val tmp = File(dir, "$name.tmp")
-        tmp.writeText(text, Charsets.UTF_8)
-        val target = File(dir, name)
-        if (!tmp.renameTo(target)) {
-            target.delete()
-            tmp.renameTo(target)
+        dir.mkdirs()
+        val tmp = File(dir, "$name.tmp").toPath()
+        val target = File(dir, name).toPath()
+        Files.write(tmp, text.toByteArray(Charsets.UTF_8))
+        var last: Exception? = null
+        for (attempt in 0 until 6) {
+            try {
+                try {
+                    Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+                } catch (e: AtomicMoveNotSupportedException) {
+                    Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
+                }
+                return
+            } catch (e: Exception) {
+                last = e
+                Thread.sleep(50L shl attempt)
+            }
         }
+        throw java.io.IOException("Couldn't save $name", last)
+    }
+
+    @Synchronized
+    override fun log(line: String) {
+        runCatching {
+            val f = File(dir, "errors.log")
+            if (f.length() > 200_000) f.writeText("", Charsets.UTF_8)
+            f.appendText("${Instant.now()}  $line\n", Charsets.UTF_8)
+        }
+    }
+
+    override fun backup(name: String) {
+        val f = File(dir, name)
+        if (f.exists()) f.copyTo(File(dir, "$name.unreadable-${System.currentTimeMillis()}"), overwrite = true)
     }
 }

@@ -109,7 +109,7 @@ private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boole
 private fun NavRail(tab: Tab, addons: Boolean, onTab: (Tab) -> Unit) {
     Column(Modifier.width(196.dp).fillMaxHeight().padding(start = 28.dp, top = 36.dp, bottom = 28.dp)) {
         Text("fifteen.", color = Ink.text, fontSize = 21.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.5.sp)
-        Text("one block at a time", color = Ink.muted, fontSize = 12.sp)
+        Text("win the next fifteen", color = Ink.muted, fontSize = 12.sp)
         Spacer(Modifier.height(44.dp))
         for (t in Tab.entries.filter { it != Tab.Addons || addons }) {
             val sel = t == tab

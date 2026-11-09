@@ -5,6 +5,8 @@ One shared Kotlin Compose Multiplatform app for Windows desktop and Android phon
 Invariants:
 1. Points never go down. A drift (0) earns +1 and a comeback bounty; momentum pauses rather than resets; XP only grows.
 2. Local-first: every action works offline and writes the local JSON log; sync is best-effort.
+   The writer in `Store` never stops: failures are retried, unsaved changes flush every 30 s, and errors (plus
+   unreadable files, kept as `*.unreadable-<ms>`) go to `errors.log` in the data folder.
 3. Sync is one Supabase table `records` (see `supabase/schema.sql`): upsert dirty records, pull by server `seq`,
    last write wins by `updatedAt`. Never commit a Supabase key; it lives in `local.properties` (baked into builds).
 4. Rewards are decided once by the device that rated the block (seeded by block id) and synced, never re-rolled.
