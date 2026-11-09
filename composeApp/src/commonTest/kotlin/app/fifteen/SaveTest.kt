@@ -47,6 +47,19 @@ class SaveTest {
     }
 
     @Test
+    fun aFreshStartNeverOverridesSyncedCategories() {
+        val store = Store(FlakyFiles(), CoroutineScope(Dispatchers.Unconfined))
+        val db = store.db.value
+        assertTrue(db.categories.isNotEmpty())
+        assertTrue(db.categories.all { it.updatedAt == 0L }) // any synced copy is newer
+        assertTrue(db.dirty.isEmpty()) // and the starters are never pushed
+        // Editing one stamps it, so your own changes do sync.
+        store.saveCategory(db.categories.first().copy(name = "Writing"))
+        assertTrue(store.db.value.categories.first { it.name == "Writing" }.updatedAt > 0)
+        assertTrue(store.db.value.dirty.any { it.startsWith("category:") })
+    }
+
+    @Test
     fun nothingChangedMeansNoWrite() {
         val files = FlakyFiles()
         val store = Store(files, CoroutineScope(Dispatchers.Unconfined))

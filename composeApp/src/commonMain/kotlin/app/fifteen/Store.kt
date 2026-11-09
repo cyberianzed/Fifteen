@@ -48,9 +48,9 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
                 .getOrNull()
         }
         if (db != null) return db
-        val now = nowMs()
-        val cats = defaultCategories(now)
-        return LocalDb(categories = cats, dirty = cats.map { "category:${it.id}" }.toSet())
+        // A fresh start (new install, reinstall, unreadable file): the starter categories are stamped 0 and
+        // aren't pushed, so anything already synced (your own categories, settings) always wins over them.
+        return LocalDb(categories = defaultCategories(0L))
     }
 
     private fun loadPrefs(): LocalPrefs {
@@ -71,6 +71,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     private val saveSignal = Channel<Unit>(Channel.CONFLATED)
     private var changes = 1L // the first pass writes once, which also tidies files from older versions
     private var savedChanges = 0L
+    private var backupDay = -1
 
     init {
         scope.launch(Dispatchers.Default) {
@@ -95,9 +96,16 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
         val target = changes
         if (target == savedChanges) return@saveLocked true
         try {
-            files.write("db.json", json.encodeToString(LocalDb.serializer(), _db.value))
+            val dbText = json.encodeToString(LocalDb.serializer(), _db.value)
+            files.write("db.json", dbText)
             files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), _prefs.value))
             savedChanges = target
+            // A daily copy (one per weekday, so the last 7 days), in case data ever needs to be restored.
+            val today = epochDay(nowMs())
+            if (today != backupDay && _db.value.blocks.isNotEmpty()) {
+                runCatching { files.write("db.backup-${weekdayOf(today) + 1}.json", dbText) }
+                backupDay = today
+            }
             true
         } catch (e: Throwable) {
             logError("save", e)
