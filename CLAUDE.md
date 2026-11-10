@@ -7,8 +7,13 @@ Invariants:
 2. Local-first: every action works offline and writes the local JSON log; sync is best-effort.
    The writer in `Store` never stops: failures are retried, unsaved changes flush every 30 s, and errors (plus
    unreadable files, kept as `*.unreadable-<ms>`) go to `errors.log` in the data folder.
-3. Sync is one Supabase table `records` (see `supabase/schema.sql`): upsert dirty records, pull by server `seq`,
-   last write wins by `updatedAt`. Never commit a Supabase key; it lives in `local.properties` (baked into builds).
+3. Sync (see `supabase/schema.sql`): upsert dirty records, pull by server `seq`, last write wins by `updatedAt`.
+   Main way: a sync key (`SyncKey.kt`) shared between devices, no account. Rows go to `key_records` under
+   `SyncKey.syncId(key)` (sent as the `x-sync-id` header that RLS checks) and their data is AES-GCM encrypted
+   with a key derived from it, so the server stores only `{"e": ...}`. The older way, email sign-in, uses
+   `records` scoped by `auth.uid()`; moving an email account to a key first saves the key there (kind
+   `synckey`) and leaves that account's data as a backup. Never commit a Supabase key; it lives in
+   `local.properties` (baked into builds).
 4. Rewards are decided once by the device that rated the block (seeded by block id) and synced, never re-rolled.
 5. Only one live block: newest start wins after a merge (`SyncEngine.normalizeLive`).
 6. Minimal, dark, lots of space; the mellow-yellow accent (`Ink.mellow`). Companions are drawn in code (`Pets.kt`) so

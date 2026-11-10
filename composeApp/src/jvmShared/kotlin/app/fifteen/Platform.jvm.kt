@@ -46,6 +46,32 @@ actual fun <T> saveLocked(block: () -> T): T = synchronized(saveLock) { block() 
 
 actual fun newId(): String = UUID.randomUUID().toString()
 
+private val random = java.security.SecureRandom()
+
+actual fun secureRandomBytes(n: Int): ByteArray = ByteArray(n).also { random.nextBytes(it) }
+
+actual fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray =
+    javax.crypto.Mac.getInstance("HmacSHA256").run { init(javax.crypto.spec.SecretKeySpec(key, "HmacSHA256")); doFinal(data) }
+
+actual fun aesGcmSeal(key: ByteArray, plain: ByteArray, aad: ByteArray): ByteArray {
+    val nonce = secureRandomBytes(12)
+    val c = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+    c.init(javax.crypto.Cipher.ENCRYPT_MODE, javax.crypto.spec.SecretKeySpec(key, "AES"), javax.crypto.spec.GCMParameterSpec(128, nonce))
+    c.updateAAD(aad)
+    return nonce + c.doFinal(plain)
+}
+
+actual fun aesGcmOpen(key: ByteArray, sealed: ByteArray, aad: ByteArray): ByteArray {
+    val c = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+    c.init(javax.crypto.Cipher.DECRYPT_MODE, javax.crypto.spec.SecretKeySpec(key, "AES"), javax.crypto.spec.GCMParameterSpec(128, sealed, 0, 12))
+    c.updateAAD(aad)
+    return c.doFinal(sealed, 12, sealed.size - 12)
+}
+
+actual fun base64Encode(bytes: ByteArray): String = java.util.Base64.getEncoder().encodeToString(bytes)
+
+actual fun base64Decode(text: String): ByteArray = java.util.Base64.getDecoder().decode(text)
+
 actual suspend fun httpCall(method: String, url: String, headers: Map<String, String>, body: String?): HttpResult =
     withContext(Dispatchers.IO) {
         try { rawCall(method, url, headers, body) } catch (e: java.io.IOException) { throw NetworkException(e.message ?: "network error") }

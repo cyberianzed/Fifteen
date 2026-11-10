@@ -64,7 +64,9 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             runCatching { json.decodeFromString(LocalPrefs.serializer(), t) }
                 .onFailure { logError("decode prefs.json", it); runCatching { files.backup("prefs.json") } }
                 .getOrNull()
-        }?.let { it.copy(refreshToken = openSecret(it.refreshToken)) } ?: LocalPrefs()
+        }?.let {
+            it.copy(refreshToken = openSecret(it.refreshToken), syncKey = openSecret(it.syncKey), linkedKey = openSecret(it.linkedKey))
+        } ?: LocalPrefs()
         var out = if (p.deviceId.isBlank()) p.copy(deviceId = newId().take(8)) else p
         // Fifteen 1.1: the big floating pet is the default on both the computer and the phone.
         if (out.version < 2) out = out.copy(barMode = "pet", showPet = true, overlay = true, overlayStyle = "pet", version = 2)
@@ -104,7 +106,9 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             val dbText = json.encodeToString(LocalDb.serializer(), _db.value)
             files.write("db.json", dbText)
             val prefs = _prefs.value
-            files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), prefs.copy(refreshToken = sealSecret(prefs.refreshToken))))
+            files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), prefs.copy(
+                refreshToken = sealSecret(prefs.refreshToken), syncKey = sealSecret(prefs.syncKey), linkedKey = sealSecret(prefs.linkedKey),
+            )))
             savedChanges = target
             // A daily copy (one per weekday, so the last 7 days), in case data ever needs to be restored.
             val today = epochDay(nowMs())
@@ -126,6 +130,14 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
         if (line == lastError) return // retries would otherwise repeat the same line every few seconds
         lastError = line
         runCatching { files.log(line) }
+    }
+
+    /** Marks every record to be pushed again (after switching to a sync key, so it gets a full copy). */
+    internal fun markAllDirty() = mutateDb { db ->
+        db.copy(
+            dirty = db.dirty + db.blocks.map { "block:${it.id}" } + db.categories.map { "category:${it.id}" } +
+                "profile:me" + "nudge:me",
+        )
     }
 
     /** Notes something worth knowing later in the small log next to the data. */

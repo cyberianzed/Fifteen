@@ -86,7 +86,7 @@ fun SettingsScreen(store: Store, platform: PlatformUi, wide: Boolean) {
         Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { Column { platform.PlatformSettings() } }
         Spacer(Modifier.height(24.dp))
-        Card(Modifier.fillMaxWidth()) { SyncSettings(store) }
+        Card(Modifier.fillMaxWidth()) { SyncSettings(store, platform) }
         Spacer(Modifier.height(24.dp))
         Card(Modifier.fillMaxWidth()) { HowPointsWork() }
         platform.PlatformFooter()
@@ -159,72 +159,6 @@ private fun CategoriesEditor(store: Store, db: LocalDb) {
                 archived.forEach { c -> Pill(c.name, dot = c.color.asColor()) { store.saveCategory(c.copy(archived = false)) } }
             }
         }
-    }
-}
-
-@Composable
-private fun SyncSettings(store: Store) {
-    val prefs by store.prefs.collectAsState()
-    val status by store.sync.status.collectAsState()
-    val scope = rememberCoroutineScope()
-    var email by remember { mutableStateOf(prefs.email) }
-    var password by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf(prefs.supabaseUrl) }
-    var key by remember { mutableStateOf(prefs.supabaseKey) }
-    var message by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    val baked = BakedConfig.SUPABASE_URL.isNotBlank()
-
-    Column {
-        SectionTitle("Sync between phone and computer", "One Supabase database; every check-in shows up on the other device within seconds.")
-        val (dot, text) = when (status.state) {
-            SyncState.NotConfigured -> Ink.faint to "Not set up — everything stays on this device for now."
-            SyncState.SignedOut -> Ink.faint to (status.message.ifBlank { "Signed out." })
-            SyncState.Syncing -> Ink.sky to "Syncing…"
-            SyncState.Synced -> Ink.good to "Synced as ${prefs.email}" + (if (status.lastOk > 0) " · ${clockText(status.lastOk)}" else "")
-            SyncState.Offline -> Ink.mellow to status.message
-            SyncState.Error -> Ink.coral to status.message
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
-            Spacer(Modifier.width(10.dp))
-            Text(text, color = Ink.text, fontSize = 13.sp)
-        }
-        Spacer(Modifier.height(16.dp))
-        if (!baked) {
-            InputField(url, { url = it }, "Supabase project URL (https://xxxx.supabase.co)", Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            InputField(key, { key = it }, "Publishable / anon key", Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-        }
-        if (prefs.refreshToken.isBlank()) {
-            InputField(email, { email = it }, "Email", Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            InputField(password, { password = it }, "Password", Modifier.fillMaxWidth(), password = true)
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                for (create in listOf(false, true)) {
-                    val label = if (create) "Create account" else "Sign in"
-                    val action = {
-                        if (!baked) store.updatePrefs { it.copy(supabaseUrl = url.trim(), supabaseKey = key.trim()) }
-                        busy = true
-                        scope.launch {
-                            message = store.sync.signIn(email, password, create)
-                            busy = false
-                            if (message == null) password = ""
-                        }
-                        Unit
-                    }
-                    if (create) GhostButton(label, onClick = action) else PrimaryButton(if (busy) "…" else label, enabled = !busy && email.isNotBlank() && password.isNotBlank(), onClick = action)
-                }
-            }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton("Sync now") { scope.launch { store.sync.syncNow() } }
-                GhostButton("Sign out") { store.sync.signOut() }
-            }
-        }
-        message?.let { Spacer(Modifier.height(10.dp)); Text(it, color = Ink.coral, fontSize = 12.sp) }
     }
 }
 

@@ -57,6 +57,9 @@ interface PlatformUi {
     /** Optional box at the very end of Settings (Android: keep it running in the background). */
     @Composable
     fun PlatformFooter()
+    /** A QR code for [text] (desktop: the sync key, for the phone's camera). Nothing on the phone. */
+    @Composable
+    fun KeyQr(text: String)
 }
 
 enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Addons("Add-ons"), Garden("Garden"), Settings("Settings") }
@@ -66,6 +69,9 @@ enum class Tab(val title: String) { Now("Now"), Insights("Insights"), Addons("Ad
 fun FifteenApp(store: Store, platform: PlatformUi, initialTab: Tab = Tab.Now, insightsOffset: Int = 0) {
     var tab by rememberSaveable { mutableStateOf(initialTab) }
     var focusMode by remember { mutableStateOf(false) }
+    // Opened from a scanned sync-key link: go to Settings, which offers to join it.
+    val pendingKey by PendingSyncKey
+    LaunchedEffect(pendingKey) { if (pendingKey != null) tab = Tab.Settings }
     LaunchedEffect(focusMode) { platform.keepScreenOn(focusMode) }
     val db by store.db.collectAsState()
     val addons = db.profile.addons

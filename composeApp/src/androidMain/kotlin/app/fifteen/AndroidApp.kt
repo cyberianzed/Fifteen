@@ -113,10 +113,24 @@ class MainActivity : ComponentActivity() {
             override fun PlatformSettings() = AndroidSettings(store)
             @Composable
             override fun PlatformFooter() = KeepRunning()
+            @Composable
+            override fun KeyQr(text: String) {}
         }
+        acceptKeyLink(intent)
         setContent {
             Box(Modifier.fillMaxSize().imePadding()) { FifteenApp(store, platform) }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        acceptKeyLink(intent)
+    }
+
+    /** A scanned QR code (fifteen://key/F15-...) opens Fifteen; Settings then offers to sync with that key. */
+    private fun acceptKeyLink(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme == "fifteen") PendingSyncKey.value = data.toString()
     }
 
     override fun onPause() {

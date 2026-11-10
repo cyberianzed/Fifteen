@@ -75,6 +75,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
                 implementation("net.java.dev.jna:jna-platform:5.15.0")
+                implementation("com.google.zxing:core:3.5.3")
             }
         }
         val desktopTest by getting {

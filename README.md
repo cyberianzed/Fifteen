@@ -132,15 +132,15 @@ That's it. Everything works on one device straight away.
 
 ### 2. Sync your phone and computer (optional, about 5 minutes)
 
-To have the same timer on both, so that stopping on one stops on the other, connect a free [Supabase](https://supabase.com) database. It's yours, and nobody else can see your data.
+To have the same timer on both, so that stopping on one stops on the other, connect a free [Supabase](https://supabase.com) database. It's yours, there's no account to make, and your data is encrypted on your devices before it's stored.
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. Open **SQL Editor → New query**, paste [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
-3. Open **Authentication → Users → Add user**, enter your email and a password, and tick *Auto Confirm User*.
-4. Open **Project Settings → API Keys** and copy the **Project URL** and the **publishable key**.
-5. In Fifteen, go to **Settings → Sync**, paste the URL and key, and sign in with your email and password. Do the same on your other device.
+3. Open **Project Settings → API Keys** and copy the **Project URL** and the **publishable key**.
+4. In Fifteen on your computer, go to **Settings → Sync**, paste the URL and key, and click **Create a sync key**.
+5. On your phone, paste the same URL and key, then scan the key's QR code (on the computer: **QR code for your phone**) or type the key.
 
-Changes show up on the other device within a few seconds.
+Changes show up on the other device within a few seconds. Keep the key somewhere safe, like a password manager: it's the only way into your synced data. (Email sign-in still works for older setups, and can hold a key so you can recover it.)
 
 ---
 
@@ -156,7 +156,7 @@ Fifteen is free for **personal, non-commercial use**. You can read the code and 
 ./gradlew :composeApp:desktopTest      # tests + screenshots
 ```
 
-**Skip typing the sync keys.** Add `supabase.url=...` and `supabase.key=...` to `local.properties`, and they're built into your own copy. Then each device only needs your email and password. Never commit that file.
+**Skip typing the sync keys.** Add `supabase.url=...` and `supabase.key=...` to `local.properties`, and they're built into your own copy. Then each device only needs the sync key. Never commit that file.
 
 **Find your way around.** Everything is plain Kotlin (Compose Multiplatform: one codebase for both platforms):
 

@@ -27,6 +27,15 @@ expect fun <T> saveLocked(block: () -> T): T
 /** Random unique id for records. */
 expect fun newId(): String
 
+// ---------- Crypto for sync keys (javax.crypto on both platforms) ----------
+expect fun secureRandomBytes(n: Int): ByteArray
+expect fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray
+/** AES-256-GCM; returns nonce + ciphertext. */
+expect fun aesGcmSeal(key: ByteArray, plain: ByteArray, aad: ByteArray): ByteArray
+expect fun aesGcmOpen(key: ByteArray, sealed: ByteArray, aad: ByteArray): ByteArray
+expect fun base64Encode(bytes: ByteArray): String
+expect fun base64Decode(text: String): ByteArray
+
 /** Seals a secret (the sync sign-in) before it's written to disk; Windows encrypts it for this user only. */
 expect fun sealSecret(plain: String): String
 

@@ -137,6 +137,8 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
             override fun PlatformSettings() = DesktopSettings(store)
             @Composable
             override fun PlatformFooter() {}
+            @Composable
+            override fun KeyQr(text: String) = QrCode(text)
         }
     }
 

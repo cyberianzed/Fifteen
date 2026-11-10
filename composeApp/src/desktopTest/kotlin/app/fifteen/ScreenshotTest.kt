@@ -70,6 +70,8 @@ class ScreenshotTest {
         }
         @Composable
         override fun PlatformFooter() {}
+        @Composable
+        override fun KeyQr(text: String) = QrCode(text)
     }
 
     private fun shot(name: String, w: Int, h: Int, content: @Composable () -> Unit) {
@@ -253,5 +255,25 @@ class ScreenshotTest {
                 shot("pet-${a.id}-$label", 260, 260) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { PetView(a.id, ps, Modifier.fillMaxSize()) } } }
             }
         }
+    }
+
+    /** Sync settings once a key is set, and the QR code the phone scans (build/screenshots only). */
+    @Test
+    fun syncKeyShots() {
+        val store = seededStore()
+        store.updatePrefs { it.copy(syncKey = "F15-7KQ2-M9XD-4TPA-HW3C-8NRB-Q5ZE") }
+        shot("sync-key", 820, 640) {
+            FifteenTheme {
+                Box(Modifier.fillMaxSize().background(Ink.bg).padding(24.dp)) { Card(Modifier.width(760.dp)) { SyncSettings(store, platform) } }
+            }
+        }
+        shot("sync-qr", 240, 240) {
+            Box(Modifier.fillMaxSize().background(Ink.bg).padding(12.dp)) { QrCode(SyncKey.link("F15-7KQ2-M9XD-4TPA-HW3C-8NRB-Q5ZE")) }
+        }
+        // The rendered QR code must scan back to the exact link a phone camera opens.
+        val img = javax.imageio.ImageIO.read(File(out, "sync-qr.png"))
+        val px = IntArray(img.width * img.height).also { img.getRGB(0, 0, img.width, img.height, it, 0, img.width) }
+        val bitmap = com.google.zxing.BinaryBitmap(com.google.zxing.common.HybridBinarizer(com.google.zxing.RGBLuminanceSource(img.width, img.height, px)))
+        kotlin.test.assertEquals("fifteen://key/F15-7KQ2-M9XD-4TPA-HW3C-8NRB-Q5ZE", com.google.zxing.qrcode.QRCodeReader().decode(bitmap).text)
     }
 }

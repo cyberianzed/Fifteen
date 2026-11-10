@@ -109,6 +109,10 @@ data class LocalPrefs(
     val email: String = "",
     val userId: String = "",
     val refreshToken: String = "",
+    /** The sync key this device syncs with (no account). Sealed on disk like the sign-in. */
+    val syncKey: String = "",
+    /** A sync key found in the signed-in email account, offered as "use the linked key". */
+    val linkedKey: String = "",
     val lastSeq: Long = 0,
 )
 
