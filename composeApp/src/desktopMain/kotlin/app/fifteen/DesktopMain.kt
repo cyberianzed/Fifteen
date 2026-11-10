@@ -83,8 +83,7 @@ fun main(args: Array<String>) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val store = Store(DirTextFiles(dir), scope)
     // Add-ons talk through the floating companion, so they only run while it's out.
-    store.nudges.petOut = { it.showBar && !it.petHidden && !FullScreenWatch.covered.value }
-    FullScreenWatch.start { store.prefs.value.hideInFullScreen }
+    store.nudges.petOut = { it.showBar && !it.petHidden }
     scope.launch { store.syncLoop { 5_000 } }
     scope.launch { store.nudges.loop() }
     Runtime.getRuntime().addShutdownHook(Thread { store.flush() })
@@ -115,11 +114,9 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
     }
     // Pop the check-in when a block ends; nudge again every 10 minutes if it's still waiting.
     var promptedAt by remember { mutableStateOf(0L to "") }
-    val holdForFullScreen by FullScreenWatch.covered
-    LaunchedEffect(v.phase, v.live?.id, v.now / 60_000, holdForFullScreen) {
+    LaunchedEffect(v.phase, v.live?.id, v.now / 60_000) {
         val id = v.live?.id ?: return@LaunchedEffect
         if (v.phase != Phase.Due) return@LaunchedEffect
-        if (holdForFullScreen) return@LaunchedEffect // waits until the video or game leaves full screen
         if (promptedAt.second != id || (!checkInOpen && v.now - promptedAt.first > 10 * 60_000L)) {
             promptedAt = v.now to id
             if (!checkInOpen) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
@@ -175,9 +172,7 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
         }
     }
 
-    // While another app is full screen (a video, a game) the pet steps aside and comes back after.
-    val fullScreen by FullScreenWatch.covered
-    val petShown = prefs.showBar && !prefs.petHidden && !fullScreen
+    val petShown = prefs.showBar && !prefs.petHidden
     // Bumped to rebuild the pet window when Windows leaves it with the wrong display scale.
     var petWindowGen by remember { mutableIntStateOf(0) }
     if (petShown) androidx.compose.runtime.key(petWindowGen) {
@@ -531,10 +526,6 @@ private fun DesktopSettings(store: Store) {
     Toggle("Extended bar", prefs.barMode == "bar", "The companion with a wide bar showing what you're on and the time left. Double-click the pet to switch.") { on ->
         store.updatePrefs { it.copy(barMode = if (on) "bar" else "pet", showPet = true) }
     }
-    Toggle(
-        "Hide in full screen", prefs.hideInFullScreen,
-        "When another app fills the screen, like a full-screen video or a game, the pet, add-ons and check-ins wait and come back after.",
-    ) { on -> store.updatePrefs { it.copy(hideInFullScreen = on) } }
     Toggle("Ask what's first at startup", prefs.askOnStart) { on -> store.updatePrefs { it.copy(askOnStart = on) } }
     Toggle(
         "Start with Windows", prefs.autostart,

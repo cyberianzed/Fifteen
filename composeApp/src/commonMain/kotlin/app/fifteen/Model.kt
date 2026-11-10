@@ -102,8 +102,6 @@ data class LocalPrefs(
     val sounds: Boolean = true,
     /** Show add-on conversations on this device. */
     val showNudges: Boolean = true,
-    /** Windows: the pet steps aside while another app is full screen (videos, games, slideshows). */
-    val hideInFullScreen: Boolean = true,
     /** Android: show add-on bubbles over other apps (needs the overlay permission). */
     val nudgeOverlay: Boolean = true,
     val supabaseUrl: String = "",
