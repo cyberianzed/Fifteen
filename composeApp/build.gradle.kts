@@ -133,6 +133,9 @@ compose.desktop {
             // TieredStopAtLevel=1 keeps only the light compiler: measured about 40% less start-up CPU
             // (36 s -> 19-23 s of CPU time), with the same idle CPU.
             jvmArgs += listOf("-Xms16m", "-Xmx256m", "-XX:+UseSerialGC", "-Xss512k", "-XX:TieredStopAtLevel=1", "-XX:ReservedCodeCacheSize=32m")
+            // Compose draws through Skia's own DirectX; Java2D's separate Direct3D pipeline is unused.
+            // Off: measured about 17 MB less memory (250 -> 233 MB resting), same CPU.
+            jvmArgs += listOf("-Dsun.java2d.d3d=false", "-Dsun.java2d.noddraw=true")
             windows {
                 menu = true
                 shortcut = true
