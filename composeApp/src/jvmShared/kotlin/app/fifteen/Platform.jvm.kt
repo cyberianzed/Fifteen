@@ -8,6 +8,9 @@ import java.net.URL
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -82,7 +85,12 @@ class DirTextFiles(private val dir: File) : TextFiles {
         dir.mkdirs()
         val tmp = File(dir, "$name.tmp").toPath()
         val target = File(dir, name).toPath()
-        Files.write(tmp, text.toByteArray(Charsets.UTF_8))
+        // Flushed to the disk itself before the swap, so even a power cut leaves the old or the new file whole.
+        FileChannel.open(tmp, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING).use { ch ->
+            val buf = ByteBuffer.wrap(text.toByteArray(Charsets.UTF_8))
+            while (buf.hasRemaining()) ch.write(buf)
+            ch.force(true)
+        }
         var last: Exception? = null
         for (attempt in 0 until 6) {
             try {

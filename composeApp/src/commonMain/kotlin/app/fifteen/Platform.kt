@@ -27,6 +27,12 @@ expect fun <T> saveLocked(block: () -> T): T
 /** Random unique id for records. */
 expect fun newId(): String
 
+/** Seals a secret (the sync sign-in) before it's written to disk; Windows encrypts it for this user only. */
+expect fun sealSecret(plain: String): String
+
+/** Opens a sealed secret; "" if it can't be opened (for example the file was copied to another PC). */
+expect fun openSecret(stored: String): String
+
 class HttpResult(val code: Int, val body: String) {
     val ok get() = code in 200..299
 }

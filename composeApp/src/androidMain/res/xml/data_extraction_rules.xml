@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: the same in Google backup and phone-to-phone transfer; the sign-in (prefs.json) stays out. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="db.json" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="db.json" />
+    </device-transfer>
+</data-extraction-rules>

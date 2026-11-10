@@ -74,6 +74,7 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
+                implementation("net.java.dev.jna:jna-platform:5.15.0")
             }
         }
         val desktopTest by getting {
@@ -128,6 +129,8 @@ compose.desktop {
             packageName = "Fifteen"
             packageVersion = "1.1.0"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
+            // A small app: a capped heap and the simple collector keep memory low and give it back to Windows.
+            jvmArgs += listOf("-Xms16m", "-Xmx256m", "-XX:+UseSerialGC", "-Xss512k", "-XX:ReservedCodeCacheSize=64m")
             windows {
                 menu = true
                 shortcut = true

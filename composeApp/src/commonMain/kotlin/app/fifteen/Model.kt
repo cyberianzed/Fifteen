@@ -70,6 +70,8 @@ data class Profile(
     val restOn: Boolean = true,
     val restAfter: Int = 30,
     val updatedAt: Long = 0,
+    /** When each setting last changed, so two devices changing different settings both keep their change. */
+    val fieldTimes: Map<String, Long> = emptyMap(),
 )
 
 /** Settings that belong to this device only. */

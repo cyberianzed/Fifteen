@@ -111,8 +111,9 @@ class SyncEngine(private val store: Store, private val json: Json) {
         runCatching {
             _status.value = _status.value.copy(state = SyncState.Syncing)
             if (!ensureToken()) return true
-            push()
+            // Pull first, so what's pushed already includes the other device's changes.
             pull()
+            push()
             _status.value = SyncStatus(SyncState.Synced, "", nowMs())
             true
         }.getOrElse {
@@ -197,6 +198,7 @@ class SyncEngine(private val store: Store, private val json: Json) {
             val cats = d.categories.associateBy { it.id }.toMutableMap()
             var profile = d.profile
             var nudge = d.nudge
+            var pushProfile = false
             for (row in rows) {
                 val o = row.jsonObject
                 val kind = o["kind"]!!.jsonPrimitive.content
@@ -215,7 +217,9 @@ class SyncEngine(private val store: Store, private val json: Json) {
                         }
                         "profile" -> {
                             val p = json.decodeFromJsonElement(Profile.serializer(), data)
-                            if (p.updatedAt > profile.updatedAt) profile = p
+                            val (merged, localNewer) = mergeProfiles(json, profile, p)
+                            profile = merged
+                            if (localNewer) pushProfile = true
                         }
                         "nudge" -> {
                             val nn = json.decodeFromJsonElement(NudgeState.serializer(), data)
@@ -224,7 +228,11 @@ class SyncEngine(private val store: Store, private val json: Json) {
                     }
                 }
             }
-            d = d.copy(blocks = blocks.values.sortedBy { it.startAt }, categories = cats.values.toList(), profile = profile, nudge = nudge)
+            for (row in rows) { row.jsonObject["updated_at"]?.jsonPrimitive?.longOrNull?.let { store.observe(it) } }
+            d = d.copy(
+                blocks = blocks.values.sortedBy { it.startAt }, categories = cats.values.toList(), profile = profile, nudge = nudge,
+                dirty = if (pushProfile) d.dirty + "profile:me" else d.dirty,
+            )
             normalizeLive(d)
         }
     }
@@ -236,7 +244,7 @@ class SyncEngine(private val store: Store, private val json: Json) {
         val newest = live.maxBy { it.startAt }
         val ended = live.filter { it.id != newest.id }.map { it.id }.toSet()
         return d.copy(
-            blocks = d.blocks.map { if (it.id in ended) it.copy(stoppedAt = newest.startAt, updatedAt = maxOf(nowMs(), it.updatedAt + 1)) else it },
+            blocks = d.blocks.map { if (it.id in ended) it.copy(stoppedAt = newest.startAt, updatedAt = store.stamp(it.updatedAt)) else it },
             dirty = d.dirty + ended.map { "block:$it" },
         )
     }

@@ -31,7 +31,12 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     private val _prefs = MutableStateFlow(loadPrefs())
     val prefs: StateFlow<LocalPrefs> = _prefs.asStateFlow()
 
-    init { Sounds.enabled = _prefs.value.sounds }
+    init {
+        Sounds.enabled = _prefs.value.sounds
+        val d = _db.value
+        (d.blocks.map { it.updatedAt } + d.categories.map { it.updatedAt } + d.profile.updatedAt + d.nudge.updatedAt)
+            .maxOrNull()?.let { observe(it) }
+    }
 
     private val _reveal = MutableStateFlow<Reveal?>(null)
     val reveal: StateFlow<Reveal?> = _reveal.asStateFlow()
@@ -59,7 +64,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             runCatching { json.decodeFromString(LocalPrefs.serializer(), t) }
                 .onFailure { logError("decode prefs.json", it); runCatching { files.backup("prefs.json") } }
                 .getOrNull()
-        } ?: LocalPrefs()
+        }?.let { it.copy(refreshToken = openSecret(it.refreshToken)) } ?: LocalPrefs()
         var out = if (p.deviceId.isBlank()) p.copy(deviceId = newId().take(8)) else p
         // Fifteen 1.1: the big floating pet is the default on both the computer and the phone.
         if (out.version < 2) out = out.copy(barMode = "pet", showPet = true, overlay = true, overlayStyle = "pet", version = 2)
@@ -98,7 +103,8 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
         try {
             val dbText = json.encodeToString(LocalDb.serializer(), _db.value)
             files.write("db.json", dbText)
-            files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), _prefs.value))
+            val prefs = _prefs.value
+            files.write("prefs.json", json.encodeToString(LocalPrefs.serializer(), prefs.copy(refreshToken = sealSecret(prefs.refreshToken))))
             savedChanges = target
             // A daily copy (one per weekday, so the last 7 days), in case data ever needs to be restored.
             val today = epochDay(nowMs())
@@ -191,7 +197,19 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
 
     // ---------- Actions ----------
 
-    private fun stamp(old: Long): Long = maxOf(nowMs(), old + 1)
+    /**
+     * Change stamps that don't trust this device's clock alone (a hybrid logical clock): always after anything
+     * already seen, so a phone with a slow clock can't lose its newer edits. Far-future stamps are capped.
+     */
+    @kotlin.concurrent.Volatile
+    private var clock: Long = 0L
+
+    internal fun observe(stamp: Long) {
+        val capped = minOf(stamp, nowMs() + 24 * 3_600_000L)
+        if (capped > clock) clock = capped
+    }
+
+    internal fun stamp(old: Long): Long = maxOf(nowMs(), old + 1, clock + 1).also { observe(it) }
 
     /** Starts a new block now (ending any live one without a rating). */
     fun start(categoryId: String, minutes: Int, intent: String = "", sound: Boolean = true) {
@@ -199,7 +217,7 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
         val bounty = pendingBounty()
         val block = Block(
             id = newId(), categoryId = categoryId, intent = intent.trim(), startAt = now, minutes = minutes,
-            bounty = bounty, device = _prefs.value.deviceId, updatedAt = now,
+            bounty = bounty, device = _prefs.value.deviceId, updatedAt = stamp(0L),
         )
         mutateDb { db ->
             val stopped = db.blocks.map { if (it.live) it.copy(stoppedAt = now, updatedAt = stamp(it.updatedAt)) else it }
@@ -321,8 +339,14 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     }
 
     fun updateProfile(f: (Profile) -> Profile) = mutateDb { db ->
-        val p = f(db.profile)
-        db.copy(profile = p.copy(updatedAt = stamp(db.profile.updatedAt)), dirty = db.dirty + "profile:me")
+        val old = db.profile
+        val p = f(old)
+        val t = stamp(old.updatedAt)
+        val changed = changedSettings(json, old, p)
+        db.copy(
+            profile = p.copy(updatedAt = t, fieldTimes = baselineTimes(json, old) + changed.associateWith { t }),
+            dirty = db.dirty + "profile:me",
+        )
     }
 
     /** Runs push/pull forever; wakes early after local changes. */

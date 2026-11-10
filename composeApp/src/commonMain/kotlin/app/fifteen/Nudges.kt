@@ -90,7 +90,7 @@ class NudgeEngine(private val store: Store) {
 
     private fun write(f: (NudgeState) -> NudgeState) = store.mutateDb { db ->
         val n = f(db.nudge)
-        db.copy(nudge = n.copy(updatedAt = maxOf(nowMs(), db.nudge.updatedAt + 1)), dirty = db.dirty + "nudge:me")
+        db.copy(nudge = n.copy(updatedAt = store.stamp(db.nudge.updatedAt)), dirty = db.dirty + "nudge:me")
     }
 
     suspend fun loop() {
