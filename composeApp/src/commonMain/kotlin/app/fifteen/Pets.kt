@@ -67,8 +67,8 @@ val AVATARS = listOf(
  */
 @Composable
 fun PetView(kind: String, state: PetState, modifier: Modifier = Modifier, interactive: Boolean = true, poke: Int = 0) {
-    val transition = rememberInfiniteTransition()
-    val t by transition.animateFloat(0f, 600f, infiniteRepeatable(tween(600_000, easing = LinearEasing), RepeatMode.Restart))
+    // Idle motion (breathing, sway, sleepy Zs) at 15 frames a second, 8 while asleep; a poke still plays smoothly.
+    val t = rememberSlowClock(if (state.asleep) 8 else 15)
     val jump = remember { Animatable(0f) }
     var reaction by remember { mutableIntStateOf(0) }
     var count by remember { mutableIntStateOf(0) }
@@ -82,7 +82,7 @@ fun PetView(kind: String, state: PetState, modifier: Modifier = Modifier, intera
     LaunchedEffect(poke) { if (poke > 0) play() }
     val click = if (interactive) Modifier.clickable(remember { MutableInteractionSource() }, indication = null) { play() } else Modifier
     Box(modifier.then(click)) {
-        Canvas(Modifier.fillMaxSize()) { drawPet(kind, state.copy(jump = jump.value, reaction = reaction), t) }
+        Canvas(Modifier.fillMaxSize()) { drawPet(kind, state.copy(jump = jump.value, reaction = reaction), t.value) }
     }
 }
 

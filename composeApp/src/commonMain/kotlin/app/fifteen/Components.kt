@@ -31,6 +31,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,25 @@ fun rememberNow(stepMs: Long = 1000): State<Long> {
         }
     }
     return now
+}
+
+/**
+ * A slow animation clock in seconds, ticking [fps] times a second instead of on every screen frame
+ * (60-144 a second). Gentle idle motion looks the same, at a fraction of the CPU and GPU work.
+ * Read it inside a draw block so only drawing repeats, not the layout. [fps] 0 holds still.
+ */
+@Composable
+fun rememberSlowClock(fps: Int): State<Float> {
+    val t = remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(fps) {
+        if (fps <= 0) return@LaunchedEffect
+        val step = 1000L / fps
+        while (true) {
+            t.floatValue = (nowMs() % 600_000L) / 1000f
+            delay(step)
+        }
+    }
+    return t
 }
 
 /** Live view of the store for composables. */
@@ -112,8 +132,9 @@ fun rememberView(store: Store, stepMs: Long = 1000): View {
 @Composable
 fun FocusBar(v: View, modifier: Modifier = Modifier, showQuote: Boolean = true, onClick: (() -> Unit)? = null) {
     val color = v.category?.color?.asColor() ?: Ink.mellow
-    val pulse = rememberInfiniteTransition()
-    val glow by pulse.animateFloat(0.45f, 1f, infiniteRepeatable(tween(1100, easing = LinearEasing), RepeatMode.Reverse))
+    // The "check in" pulse only runs while a check-in is waiting, and at 20 frames a second.
+    val pulse by rememberSlowClock(if (v.phase == Phase.Due) 20 else 0)
+    val glow = if (v.phase == Phase.Due) 0.45f + 0.55f * (1f - kotlin.math.abs((pulse / 1.1f) % 2f - 1f)) else 1f
     Row(
         modifier
             .clip(RoundedCornerShape(50))
@@ -322,9 +343,8 @@ fun RatingBadge(rating: Int?, size: Dp = 30.dp) {
 
 @Composable
 fun ArtifactIcon(a: Artifact, owned: Boolean, modifier: Modifier = Modifier) {
-    val tr = rememberInfiniteTransition()
-    val t by tr.animateFloat(0f, 100f, infiniteRepeatable(tween(100_000, easing = LinearEasing)))
-    Canvas(modifier) { drawArtifact(a, owned, t) }
+    val t = rememberSlowClock(15)
+    Canvas(modifier) { drawArtifact(a, owned, t.value % 100f) }
 }
 
 @Composable
