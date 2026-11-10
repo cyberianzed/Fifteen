@@ -140,14 +140,20 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
 
     private fun persistPrefs() = markChanged()
 
+    // Only real changes are saved and pushed: a sync round that brings nothing new (every few seconds)
+    // used to rewrite both files each time.
     internal fun mutateDb(changeLocal: Boolean = true, f: (LocalDb) -> LocalDb) {
-        _db.update(f)
+        var changed = false
+        _db.update { old -> f(old).also { changed = it != old } }
+        if (!changed) return
         persistDb()
         if (changeLocal) kick.trySend(Unit)
     }
 
     fun updatePrefs(f: (LocalPrefs) -> LocalPrefs) {
-        _prefs.update(f)
+        var changed = false
+        _prefs.update { old -> f(old).also { changed = it != old } }
+        if (!changed) return
         Sounds.enabled = _prefs.value.sounds
         persistPrefs()
     }

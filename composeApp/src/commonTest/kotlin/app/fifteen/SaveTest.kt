@@ -60,6 +60,18 @@ class SaveTest {
     }
 
     @Test
+    fun aSyncRoundWithNothingNewDoesNotRewriteFiles() {
+        val files = FlakyFiles()
+        val store = Store(files, CoroutineScope(Dispatchers.Unconfined))
+        assertTrue(store.flush())
+        files.failWrites = 99 // any write attempt would now fail the flush
+        store.mutateDb(changeLocal = false) { it.copy(blocks = it.blocks.sortedBy { b -> b.startAt }) } // same data
+        store.updatePrefs { it.copy(lastSeq = it.lastSeq) } // same value
+        assertTrue(store.flush())
+        assertTrue(store.db.value.dirty.isEmpty())
+    }
+
+    @Test
     fun nothingChangedMeansNoWrite() {
         val files = FlakyFiles()
         val store = Store(files, CoroutineScope(Dispatchers.Unconfined))

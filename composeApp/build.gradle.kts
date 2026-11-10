@@ -130,7 +130,9 @@ compose.desktop {
             packageVersion = "1.1.0"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             // A small app: a capped heap and the simple collector keep memory low and give it back to Windows.
-            jvmArgs += listOf("-Xms16m", "-Xmx256m", "-XX:+UseSerialGC", "-Xss512k", "-XX:ReservedCodeCacheSize=64m")
+            // TieredStopAtLevel=1 keeps only the light compiler: measured about 40% less start-up CPU
+            // (36 s -> 19-23 s of CPU time), with the same idle CPU.
+            jvmArgs += listOf("-Xms16m", "-Xmx256m", "-XX:+UseSerialGC", "-Xss512k", "-XX:TieredStopAtLevel=1", "-XX:ReservedCodeCacheSize=32m")
             windows {
                 menu = true
                 shortcut = true

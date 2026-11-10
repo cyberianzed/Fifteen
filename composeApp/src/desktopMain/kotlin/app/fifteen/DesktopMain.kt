@@ -84,7 +84,8 @@ fun main(args: Array<String>) {
     val store = Store(DirTextFiles(dir), scope)
     // Add-ons talk through the floating companion, so they only run while it's out.
     store.nudges.petOut = { it.showBar && !it.petHidden }
-    scope.launch { store.syncLoop { 5_000 } }
+    // Checks the server every 5 s around a block, every 20 s while resting; local changes still push at once.
+    scope.launch { store.syncLoop { if (store.phase() == Phase.Idle) 20_000 else 5_000 } }
     scope.launch { store.nudges.loop() }
     Runtime.getRuntime().addShutdownHook(Thread { store.flush() })
     if (store.prefs.value.autostart) Autostart.set(true)

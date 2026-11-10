@@ -67,8 +67,8 @@ val AVATARS = listOf(
  */
 @Composable
 fun PetView(kind: String, state: PetState, modifier: Modifier = Modifier, interactive: Boolean = true, poke: Int = 0) {
-    // Idle motion (breathing, sway, sleepy Zs) at 15 frames a second, 8 while asleep; a poke still plays smoothly.
-    val t = rememberSlowClock(if (state.asleep) 8 else 15)
+    // Idle motion (breathing, sway, sleepy Zs) at 15 frames a second, 3 while asleep; a poke still plays smoothly.
+    val t = rememberSlowClock(if (state.asleep) 3 else 15)
     val jump = remember { Animatable(0f) }
     var reaction by remember { mutableIntStateOf(0) }
     var count by remember { mutableIntStateOf(0) }
