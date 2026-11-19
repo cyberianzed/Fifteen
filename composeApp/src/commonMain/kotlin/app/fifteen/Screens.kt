@@ -274,6 +274,16 @@ fun GardenScreen(store: Store, wide: Boolean) {
             Spacer(Modifier.height(10.dp))
             Muted(AVATARS.firstOrNull { it.id == v.db.profile.avatar }?.blurb ?: "", size = 12)
         }
+        // A quiet size control for the floating pet on this device.
+        Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Muted("Floating pet size", size = 12)
+            Spacer(Modifier.width(12.dp))
+            val sizes = listOf(0.8f, 1f, 1.2f)
+            Segmented(listOf("Small", "Regular", "Large"), sizes.indexOfFirst { kotlin.math.abs(it - v.prefs.petSize) < 0.01f }.coerceAtLeast(1)) { i ->
+                store.updatePrefs { it.copy(petSize = sizes[i]) }
+            }
+        }
         Spacer(Modifier.height(28.dp))
         Card(Modifier.fillMaxWidth()) {
             Column {

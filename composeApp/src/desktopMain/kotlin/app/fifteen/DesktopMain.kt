@@ -357,10 +357,12 @@ private fun FloatingBar(
 ) {
     val petMode = prefs.showPet && prefs.barMode == "pet"
     val barW = 460
-    val petW = if (prefs.showPet) 104 else 0
+    // Garden → Floating pet size scales the companion; the little timer under it stays the same size.
+    val s = prefs.petSize.coerceIn(0.6f, 1.5f)
+    val petW = if (prefs.showPet) (104 * s).toInt() else 0
     val (width, h) = when {
-        petMode -> 210 to 258
-        prefs.showPet -> (barW + petW) to 104
+        petMode -> maxOf((210 * s).toInt(), 160) to (196 * s).toInt() + 62
+        prefs.showPet -> (barW + petW) to maxOf((104 * s).toInt(), 50)
         else -> barW to 46
     }
     var poke by remember { mutableIntStateOf(0) }
@@ -466,14 +468,14 @@ private fun FloatingBar(
                 (v.phase == Phase.Idle || (v.phase == Phase.Running && prefs.petTimer == "countdown"))
             if (petMode) {
                 Column(drag, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
-                    PetView(v.db.profile.avatar, v.petState(), Modifier.size(196.dp), interactive = false, poke = poke)
+                    PetView(v.db.profile.avatar, v.petState(), Modifier.size((196 * s).dp), interactive = false, poke = poke)
                     MiniTimer(v, countdown)
                     Spacer(Modifier.height(6.dp))
                 }
             } else {
                 Row(drag, verticalAlignment = Alignment.Bottom) {
                     if (prefs.showPet) {
-                        PetView(v.db.profile.avatar, v.petState(), Modifier.size(100.dp), interactive = false, poke = poke)
+                        PetView(v.db.profile.avatar, v.petState(), Modifier.size((100 * s).dp), interactive = false, poke = poke)
                         Spacer(Modifier.width(4.dp))
                     }
                     Box(Modifier.width(barW.dp).padding(bottom = 4.dp, end = 4.dp)) {

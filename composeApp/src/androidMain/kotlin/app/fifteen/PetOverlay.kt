@@ -424,7 +424,7 @@ private fun PetOverlayContent(
     val headView: @androidx.compose.runtime.Composable () -> Unit = {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                Modifier.requiredSize(68.dp).pointerInput(Unit) {
+                Modifier.requiredSize((68 * v.prefs.petSize.coerceIn(0.6f, 1.5f)).dp).pointerInput(Unit) {
                     detectTapGestures(onTap = { tap.value() }, onDoubleTap = { double.value() }, onLongPress = { long.value() })
                 },
                 contentAlignment = Alignment.Center,
@@ -440,7 +440,7 @@ private fun PetOverlayContent(
                     val sweep = when (v.phase) { Phase.Running -> 360f * v.progress; Phase.Due -> 360f; Phase.Idle -> 0f }
                     drawArc(if (v.phase == Phase.Due) Ink.mellow else color, -90f, sweep, false, tl, sz, style = Stroke(stroke, cap = StrokeCap.Round))
                 }
-                PetView(v.db.profile.avatar, v.petState(), Modifier.size(58.dp), interactive = false, poke = poke)
+                PetView(v.db.profile.avatar, v.petState(), Modifier.size((58 * v.prefs.petSize.coerceIn(0.6f, 1.5f)).dp), interactive = false, poke = poke)
             }
             if (v.phase != Phase.Idle) {
                 Spacer(Modifier.height(3.dp))

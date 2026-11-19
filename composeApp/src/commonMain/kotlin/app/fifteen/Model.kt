@@ -118,6 +118,8 @@ data class LocalPrefs(
     val showNudges: Boolean = true,
     /** Desktop: the pet's little timer shows the countdown (while resting, or when chosen during a block). */
     val countdownOnPet: Boolean = false,
+    /** Size of the floating pet on this device: 0.8 small, 1 regular, 1.2 large. */
+    val petSize: Float = 1f,
     /** Desktop, during a block with the countdown on the pet: which one the pet shows ("block" or "countdown"). */
     val petTimer: String = "block",
     /** Android: show add-on bubbles over other apps (needs the overlay permission). */
