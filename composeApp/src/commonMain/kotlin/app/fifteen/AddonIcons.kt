@@ -19,7 +19,7 @@ fun AddonIcon(kind: String, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         when (kind) {
             "eye" -> cucumber()
-            "water" -> drop()
+            "water" -> glass()
             "well" -> buddy()
             "rest" -> coffee()
             "countdown" -> hourglass()
@@ -172,4 +172,18 @@ private fun DrawScope.cucumber() {
     drawArc(Color(0xFF04342C), 20f, 140f, false, p(0.4f, 0.6f), Size(w(0.2f), w(0.14f)), style = Stroke(w(0.045f), cap = StrokeCap.Round))
     drawCircle(Color(0xFFF4C0D1), w(0.055f), p(0.2f, 0.68f))
     drawCircle(Color(0xFFF4C0D1), w(0.055f), p(0.8f, 0.68f))
+}
+
+private fun DrawScope.glass() {
+    // A smiling glass of water with a pink straw. Flat, no shading.
+    val navy = Color(0xFF042C53)
+    val straw = Path().apply { moveTo(w(0.64f), w(0.02f)); lineTo(w(0.74f), w(0.02f)); lineTo(w(0.6f), w(0.5f)) }
+    drawPath(straw, Color(0xFFED93B1), style = Stroke(w(0.07f), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    val cup = Path().apply { moveTo(w(0.13f), w(0.22f)); lineTo(w(0.87f), w(0.22f)); lineTo(w(0.78f), w(0.98f)); lineTo(w(0.22f), w(0.98f)); close() }
+    drawPath(cup, Color(0xFFE6F1FB))
+    val water = Path().apply { moveTo(w(0.16f), w(0.48f)); lineTo(w(0.84f), w(0.48f)); lineTo(w(0.78f), w(0.98f)); lineTo(w(0.22f), w(0.98f)); close() }
+    drawPath(water, Color(0xFF85B7EB))
+    drawCircle(navy, w(0.047f), p(0.4f, 0.69f))
+    drawCircle(navy, w(0.047f), p(0.6f, 0.69f))
+    drawArc(navy, 20f, 140f, false, p(0.42f, 0.73f), Size(w(0.16f), w(0.1f)), style = Stroke(w(0.037f), cap = StrokeCap.Round))
 }
