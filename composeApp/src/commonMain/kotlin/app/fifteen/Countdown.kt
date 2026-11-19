@@ -57,6 +57,46 @@ fun countdownShort(msLeft: Long): String {
     return if (d > 0) "${d}d ${(total % 86_400 / 3600).toString().padStart(2, '0')}h" else countdownText(msLeft)
 }
 
+/** A new countdown starts today at 11 pm (or an hour from now if it's already later). */
+fun defaultCountdownAt(now: Long): Long {
+    val today = epochDay(now)
+    val elevenPm = dayStartMs(today) + 23 * 3_600_000L
+    return if (now < elevenPm - 3_600_000L) elevenPm else (now / 3_600_000L + 2) * 3_600_000L
+}
+
+/** How much of the countdown's time is left, 1 → 0, measured from when it was set. */
+fun countdownFraction(p: Profile, now: Long): Float {
+    val from = if (p.countdownFrom in 1 until p.countdownAt) p.countdownFrom else p.countdownAt - 86_400_000L
+    val span = (p.countdownAt - from).coerceAtLeast(1)
+    return ((p.countdownAt - now).toFloat() / span).coerceIn(0f, 1f)
+}
+
+/**
+ * The time-left pill: a rounded bar that shrinks as the deadline nears, with a glowing head. It warms from
+ * mellow yellow to coral in the last fifth of the time.
+ */
+@Composable
+fun CountdownPill(fraction: Float, modifier: Modifier = Modifier) {
+    val warm = ((0.2f - fraction) / 0.2f).coerceIn(0f, 1f)
+    val color = androidx.compose.ui.graphics.lerp(Ink.mellow, Ink.coral, warm)
+    androidx.compose.foundation.Canvas(modifier) {
+        val h = size.height
+        val r = androidx.compose.ui.geometry.CornerRadius(h / 2)
+        drawRoundRect(androidx.compose.ui.graphics.Color(0x1FFFFFFF), cornerRadius = r)
+        if (fraction > 0f) {
+            val w = (size.width * fraction).coerceAtLeast(h)
+            drawRoundRect(
+                androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(color.copy(alpha = 0.35f), color), 0f, w),
+                size = androidx.compose.ui.geometry.Size(w, h), cornerRadius = r,
+            )
+            val head = androidx.compose.ui.geometry.Offset(w - h / 2, h / 2)
+            drawCircle(color.copy(alpha = 0.18f), radius = h * 1.6f, center = head)
+            drawCircle(color.copy(alpha = 0.35f), radius = h * 1.05f, center = head)
+            drawCircle(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f), radius = h * 0.32f, center = head)
+        }
+    }
+}
+
 /** "Tue 25 Nov · 9:00am" for the deadline. */
 fun countdownWhen(at: Long): String = "${formatDay(epochDay(at), "EEE d MMM")} · ${clockText(at)}"
 
@@ -71,8 +111,14 @@ fun CountdownCard(store: Store, v: View) {
             if (left > 0) {
                 Text(countdownText(left), color = Ink.text, fontSize = 40.sp, fontWeight = FontWeight.ExtraLight,
                     style = TextStyle(fontFeatureSettings = "tnum"))
-                Spacer(Modifier.height(4.dp))
-                Muted("until ${countdownWhen(p.countdownAt)}", size = 12)
+                Spacer(Modifier.height(12.dp))
+                val fraction = countdownFraction(p, v.now)
+                CountdownPill(fraction, Modifier.fillMaxWidth().height(10.dp))
+                Spacer(Modifier.height(10.dp))
+                Row {
+                    Muted("until ${countdownWhen(p.countdownAt)}", size = 12, modifier = Modifier.weight(1f))
+                    Muted("${(fraction * 100).toInt()}% of the time left", size = 12)
+                }
             } else {
                 Text("Time's up", color = Ink.mellow, fontSize = 28.sp, fontWeight = FontWeight.Light)
                 Spacer(Modifier.height(4.dp))
@@ -92,12 +138,11 @@ fun CountdownSettings(store: Store, v: View, platform: PlatformUi) {
     var name by remember(p.countdownName) { mutableStateOf(p.countdownName) }
     var pickDate by remember { mutableStateOf(false) }
     var pickTime by remember { mutableStateOf(false) }
-    // Until a date is chosen, default to tomorrow at 9:00 am.
-    val at = if (p.countdownAt > 0) p.countdownAt else dayStartMs(v.today + 1) + 9 * 3_600_000L
+    val at = if (p.countdownAt > 0) p.countdownAt else defaultCountdownAt(v.now)
     val day = epochDay(at)
     val minute = minuteOfDay(at)
     fun save(newDay: Int = day, newMinute: Int = minute) =
-        store.updateProfile { it.copy(countdownAt = dayStartMs(newDay) + newMinute * 60_000L) }
+        store.updateProfile { it.copy(countdownAt = dayStartMs(newDay) + newMinute * 60_000L, countdownFrom = nowMs()) }
 
     Text("Name", color = Ink.muted, fontSize = 12.sp)
     Spacer(Modifier.height(6.dp))
@@ -109,16 +154,10 @@ fun CountdownSettings(store: Store, v: View, platform: PlatformUi) {
         GhostButton(formatDay(day, "EEE d MMM yyyy")) { pickDate = true }
         GhostButton(clockText(at)) { pickTime = true }
     }
-    if (p.countdownAt == 0L) {
-        Spacer(Modifier.height(8.dp))
-        Muted("Pick a date to start it.", size = 12)
-    }
     if (platform.isDesktop) {
         Spacer(Modifier.height(10.dp))
-        Toggle(
-            "Show on the pet", v.prefs.countdownOnPet,
-            "The pet's little timer shows the countdown while you rest. During a block, right-click the pet to switch between the two.",
-        ) { on -> store.updatePrefs { it.copy(countdownOnPet = on) } }
+        TickBox("Show on the pet", v.prefs.countdownOnPet) { on -> store.updatePrefs { it.copy(countdownOnPet = on) } }
+        Muted("While you rest the pet shows the countdown. During a block, right-click the pet to switch between the two.", size = 12)
     }
 
     if (pickDate) {

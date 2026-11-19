@@ -73,6 +73,13 @@ class NudgeEngine(private val store: Store) {
         else -> p.wellOn
     }
 
+    /** Whether [kind] may come now: its "During blocks" / "While resting" ticks. */
+    fun allowedNow(kind: String, p: Profile, phase: Phase): Boolean = when (phase) {
+        Phase.Due -> false
+        Phase.Running -> when (kind) { "eye" -> p.eyeBlocks; "water" -> p.waterBlocks; "well" -> p.wellBlocks; else -> false }
+        Phase.Idle -> when (kind) { "eye" -> p.eyeRest; "water" -> p.waterRest; "well" -> p.wellRest; "rest" -> true; else -> false }
+    }
+
     /** Whether this device's companion is out (floating, not hidden). Set by each platform. */
     var petOut: (LocalPrefs) -> Boolean = { true }
 
@@ -124,14 +131,14 @@ class NudgeEngine(private val store: Store) {
             val lastBlock = db.blocks.maxOfOrNull { it.stoppedAt ?: it.ratedAt ?: it.endAt } ?: 0L
             if (now - maxOf(lastBlock, n.restLast, outSince) >= p.restAfter * 60_000L) { begin("rest", "ask", now); return }
         }
-        // Waiting for a check-in: leave that moment alone. Resting: only if add-ons run "anytime".
-        if (phase == Phase.Due || (phase == Phase.Idle && !p.addonsAnytime)) return
+        // Waiting for a check-in: leave that moment alone. Otherwise each add-on's own ticks decide.
+        if (phase == Phase.Due) return
         val f = n.followUp
-        if (f != null && now >= f.at && enabled(f.kind, p)) { begin(f.kind, f.stage, now); return }
+        if (f != null && now >= f.at && enabled(f.kind, p) && allowedNow(f.kind, p, phase)) { begin(f.kind, f.stage, now); return }
         val chain = if (phase == Phase.Running) maxOf(store.chainStart(db, now), outSince) else outSince
-        if (p.eyeOn && now - maxOf(n.eyeLast, chain) >= p.eyeEvery * 60_000L) { begin("eye", "ask", now); return }
-        if (p.waterOn && f?.kind != "water" && now - maxOf(n.waterLast, chain) >= p.waterEvery * 60_000L) { begin("water", "remind", now); return }
-        if (p.wellOn) {
+        if (p.eyeOn && allowedNow("eye", p, phase) && now - maxOf(n.eyeLast, chain) >= p.eyeEvery * 60_000L) { begin("eye", "ask", now); return }
+        if (p.waterOn && allowedNow("water", p, phase) && f?.kind != "water" && now - maxOf(n.waterLast, chain) >= p.waterEvery * 60_000L) { begin("water", "remind", now); return }
+        if (p.wellOn && allowedNow("well", p, phase)) {
             if (n.wellNext == 0L || n.wellNext < chain) write { it.copy(wellNext = now + wellGap(p, now)) }
             else if (now >= n.wellNext) begin("well", "ask", now)
         }

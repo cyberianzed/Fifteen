@@ -75,7 +75,7 @@ fun CheckInPanel(store: Store, modifier: Modifier = Modifier, onClose: () -> Uni
 }
 
 @Composable
-private fun RateStep(store: Store, block: Block, v: View, onSkip: () -> Unit) {
+private fun RateStep(store: Store, block: Block, v: View, onSkip: () -> Unit, later: Boolean = false) {
     val cat = store.category(block.categoryId, v.db)
     // The popup can appear mid-click or mid-typing: the choices only respond after a moment.
     val armedAt = remember(block.id) { nowMs() + 1_000 }
@@ -113,15 +113,19 @@ private fun RateStep(store: Store, block: Block, v: View, onSkip: () -> Unit) {
             }
         }
     }
-    VerticalGap(24.dp)
-    PrimaryButton("Skip for now", onClick = onSkip)
-    VerticalGap(6.dp)
-    Muted("It waits on your pet; rate it whenever you like.", size = 12)
-    VerticalGap(16.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        GhostButton("+5 min") { if (armed()) store.extend(5) }
-        GhostButton("Stop tracking") { if (armed()) store.stopTracking() }
+    VerticalGap(28.dp)
+    if (later) {
+        GhostButton("Not now", onClick = onSkip)
+        return
     }
+    // One row: the safest choice on the right, outlined rather than filled so it isn't hit by reflex.
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        GhostButton("Stop tracking") { if (armed()) store.stopTracking() }
+        GhostButton("+5 min") { if (armed()) store.extend(5) }
+        GhostButton("Skip for now", color = Ink.mellow, border = Ink.mellow.copy(alpha = 0.8f), onClick = onSkip)
+    }
+    VerticalGap(8.dp)
+    Muted("Skipped blocks wait on your pet and in today's Blocks list.", size = 11)
 }
 
 @Composable
@@ -280,5 +284,24 @@ fun InputField(value: String, onChange: (String) -> Unit, hint: String, modifier
             keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }),
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/**
+ * Rates a block that was skipped or stopped without a rating, from today's Blocks list. Closes itself once the
+ * block has a rating.
+ */
+@Composable
+fun RateLaterDialog(store: Store, blockId: String, onClose: () -> Unit) {
+    val v = rememberView(store)
+    val block = v.db.blocks.firstOrNull { it.id == blockId }
+    LaunchedEffect(block?.rated) { if (block == null || block.rated) onClose() }
+    if (block == null || block.rated) return
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        Card(padding = 28.dp) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                RateStep(store, block, v, onSkip = onClose, later = true)
+            }
+        }
     }
 }

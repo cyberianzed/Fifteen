@@ -45,12 +45,12 @@ fun NowScreen(store: Store, platform: PlatformUi, wide: Boolean, onFocus: () -> 
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 Column(Modifier.weight(1.05f)) { Hero(store, v, platform, onFocus) }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) { TodayColumn(store, v) }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(24.dp)) { TodayColumn(store, v, platform) }
             }
         } else {
             Hero(store, v, platform, onFocus)
             Spacer(Modifier.height(20.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) { TodayColumn(store, v) }
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) { TodayColumn(store, v, platform) }
         }
     }
 }
@@ -170,7 +170,7 @@ private fun Hero(store: Store, v: View, platform: PlatformUi, onFocus: () -> Uni
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TodayColumn(store: Store, v: View) {
+private fun TodayColumn(store: Store, v: View, platform: PlatformUi) {
     val today = remember(v.db, v.today) { computeInsights(v.db, DayRange(v.today, v.today)) }
     if (countdownActive(v.db.profile)) CountdownCard(store, v)
     Card(Modifier.fillMaxWidth()) {
@@ -189,18 +189,28 @@ private fun TodayColumn(store: Store, v: View) {
     Card(Modifier.fillMaxWidth()) {
         Column {
             SectionTitle("Blocks")
-            val list = v.db.blocks.filter { !it.deleted && epochDay(it.startAt) == v.today && (it.rated || it.live) }.sortedByDescending { it.startAt }
+            // Also blocks stopped without a rating (5+ minutes long), so they can still be rated.
+            val list = v.db.blocks.filter {
+                !it.deleted && epochDay(it.startAt) == v.today &&
+                    (it.rated || it.live || (it.stoppedAt != null && it.stoppedAt - it.startAt >= 5 * 60_000L))
+            }.sortedByDescending { it.startAt }
+            var rating by remember { mutableStateOf<String?>(null) }
+            rating?.let { id -> RateLaterDialog(store, id) { rating = null } }
             if (list.isEmpty()) Muted("Nothing yet today. Your first block plants the seed.")
             list.forEachIndexed { i, b ->
                 if (i > 0) Hairline(Modifier.padding(vertical = 2.dp))
-                BlockRow(store, b, store.category(b.categoryId, v.db))
+                // A finished block waiting for its check-in rates in the check-in popup; older ones in a small dialog.
+                val waiting = !b.rated && !(b.live && v.phase == Phase.Running)
+                BlockRow(store, b, store.category(b.categoryId, v.db), onRate = if (!waiting) null else {
+                    { if (b.live) platform.openCheckIn() else rating = b.id }
+                })
             }
         }
     }
 }
 
 @Composable
-private fun BlockRow(store: Store, b: Block, cat: Category?) {
+private fun BlockRow(store: Store, b: Block, cat: Category?, onRate: (() -> Unit)? = null) {
     var confirm by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         RatingBadge(b.rating)
@@ -218,6 +228,7 @@ private fun BlockRow(store: Store, b: Block, cat: Category?) {
             )
         }
         artifactById(b.reward)?.let { ArtifactIcon(it, true, Modifier.size(28.dp)) }
+        if (onRate != null) GhostButton("+ Rate", color = Ink.mellow, hPad = 12.dp, border = Ink.mellow.copy(alpha = 0.5f), onClick = onRate)
         if (b.rated) Text("+${b.points}", color = Ink.mellow, fontSize = 14.sp, modifier = Modifier.padding(start = 10.dp))
         if (b.rated) {
             Text(

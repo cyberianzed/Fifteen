@@ -358,7 +358,7 @@ private fun FloatingBar(
     val barW = 460
     val petW = if (prefs.showPet) 104 else 0
     val (width, h) = when {
-        petMode -> 210 to 250
+        petMode -> 210 to 258
         prefs.showPet -> (barW + petW) to 104
         else -> barW to 46
     }
@@ -398,8 +398,10 @@ private fun FloatingBar(
                     barBounds.value = w.bounds
                 } else {
                     val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
-                    val x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - tw) / 2
-                    val y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
+                    var x = if (prefs.barX >= 0) prefs.barX else screen.x + (screen.width - tw) / 2
+                    var y = if (prefs.barY >= 0) prefs.barY else screen.y + 6
+                    // Saved on a monitor that isn't connected now: start at the top centre of this one.
+                    if (!onAnyScreen(java.awt.Rectangle(x, y, tw, th))) { x = screen.x + (screen.width - tw) / 2; y = screen.y + 6 }
                     w.setBounds(x, y, tw, th)
                     barBounds.value = w.bounds
                 }
@@ -415,6 +417,16 @@ private fun FloatingBar(
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(3_000)
+                    // Unplugging a monitor can leave the pet on a screen that's gone: bring it back.
+                    if (window.isVisible && !onAnyScreen(window.bounds)) {
+                        val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+                        val nx = screen.x + (screen.width - window.width) / 2
+                        val ny = screen.y + 6
+                        window.setLocation(nx, ny)
+                        barBounds.value = window.bounds
+                        store.updatePrefs { it.copy(barX = nx, barY = ny) }
+                        store.note("pet was off screen after a display change; moved it back")
+                    }
                     val k = scaleMismatch(window, drawScale)
                     if (k == 1f) continue
                     val now = System.currentTimeMillis()
@@ -448,12 +460,12 @@ private fun FloatingBar(
                 onRightClick = { p -> onMenuLatest.value(p) },
                 onMoved = { x, y -> store.updatePrefs { it.copy(barX = x, barY = y) }; barBounds.value = window.bounds },
             )
+            // The countdown add-on on the pet: shown while resting, or during a block when chosen.
+            val countdown = prefs.countdownOnPet && countdownActive(v.db.profile) &&
+                (v.phase == Phase.Idle || (v.phase == Phase.Running && prefs.petTimer == "countdown"))
             if (petMode) {
                 Column(drag, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                     PetView(v.db.profile.avatar, v.petState(), Modifier.size(196.dp), interactive = false, poke = poke)
-                    // The countdown add-on on the pet: shown while resting, or during a block when chosen.
-                    val countdown = prefs.countdownOnPet && countdownActive(v.db.profile) &&
-                        (v.phase == Phase.Idle || (v.phase == Phase.Running && prefs.petTimer == "countdown"))
                     MiniTimer(v, countdown)
                     Spacer(Modifier.height(6.dp))
                 }
@@ -464,7 +476,7 @@ private fun FloatingBar(
                         Spacer(Modifier.width(4.dp))
                     }
                     Box(Modifier.width(barW.dp).padding(bottom = 4.dp, end = 4.dp)) {
-                        FocusBar(v, Modifier.fillMaxWidth())
+                        FocusBar(v, Modifier.fillMaxWidth(), countdown = countdown)
                     }
                 }
             }
@@ -473,6 +485,13 @@ private fun FloatingBar(
 }
 
 private var lastPetRebuild = 0L
+
+/** Whether the middle of [r] is on a connected screen. */
+private fun onAnyScreen(r: java.awt.Rectangle): Boolean {
+    val cx = r.x + r.width / 2
+    val cy = r.y + r.height / 2
+    return GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices.any { it.defaultConfiguration.bounds.contains(cx, cy) }
+}
 
 /**
  * How much bigger the window must be than its size in dp: 1 normally, or draw scale / window scale when Windows

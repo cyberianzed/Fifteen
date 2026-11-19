@@ -193,27 +193,12 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         Spacer(Modifier.height(6.dp))
         Muted("Your companion brings these up in a chat bubble while it's floating on screen. Answer on any device.")
         Spacer(Modifier.height(24.dp))
-        Card(Modifier.fillMaxWidth()) {
-            Column {
-                Text("When", color = Ink.text, fontSize = 15.sp)
-                Spacer(Modifier.height(8.dp))
-                Segmented(listOf("Anytime", "Only during blocks"), if (p.addonsAnytime) 0 else 1) { i -> store.updateProfile { it.copy(addonsAnytime = i == 0) } }
-                Spacer(Modifier.height(8.dp))
-                Muted(
-                    (if (p.addonsAnytime) "Eye breaks, water and check-ins keep coming while you rest too, as long as your pet is out."
-                    else "Eye breaks, water and check-ins only come while a block is running.") +
-                        " \"While you rest\" only ever comes while you rest.",
-                    size = 12,
-                )
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-
         AddonCard(
             "Eye breaks (20-20-20)",
             "Every ${p.eyeEvery} minutes: look about 6 metres away for 20 seconds. A small timer runs beside your block timer.",
             p.eyeOn, { on -> store.updateProfile { it.copy(eyeOn = on) } }, { store.nudges.begin("eye", "ask") },
         ) {
+            WhenTicks(p.eyeBlocks, p.eyeRest, { b -> store.updateProfile { it.copy(eyeBlocks = b) } }, { r -> store.updateProfile { it.copy(eyeRest = r) } })
             Text("Every", color = Ink.muted, fontSize = 12.sp)
             Spacer(Modifier.height(6.dp))
             Segmented(listOf("20 min", "30 min", "45 min"), listOf(20, 30, 45).indexOf(p.eyeEvery).coerceAtLeast(0)) { i -> store.updateProfile { it.copy(eyeEvery = listOf(20, 30, 45)[i]) } }
@@ -226,6 +211,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
             "A reminder, then a friendly \"did you drink?\" a few minutes later. Say no and it checks back or offers to remind you again.",
             p.waterOn, { on -> store.updateProfile { it.copy(waterOn = on) } }, { store.nudges.begin("water", "remind") },
         ) {
+            WhenTicks(p.waterBlocks, p.waterRest, { b -> store.updateProfile { it.copy(waterBlocks = b) } }, { r -> store.updateProfile { it.copy(waterRest = r) } })
             Text("Remind every", color = Ink.muted, fontSize = 12.sp)
             Spacer(Modifier.height(6.dp))
             Segmented(listOf("30m", "45m", "1h", "1½h"), listOf(30, 45, 60, 90).indexOf(p.waterEvery).coerceAtLeast(0)) { i -> store.updateProfile { it.copy(waterEvery = listOf(30, 45, 60, 90)[i]) } }
@@ -263,6 +249,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
             "Every now and then: \"Everything okay? Feeling productive?\" If not, a small idea to reset: a stretch, a walk, some water.",
             p.wellOn, { on -> store.updateProfile { it.copy(wellOn = on) } }, { store.nudges.begin("well", "ask") },
         ) {
+            WhenTicks(p.wellBlocks, p.wellRest, { b -> store.updateProfile { it.copy(wellBlocks = b) } }, { r -> store.updateProfile { it.copy(wellRest = r) } })
             Text("How often", color = Ink.muted, fontSize = 12.sp)
             Spacer(Modifier.height(6.dp))
             Segmented(listOf("Rarely", "Sometimes", "Often"), p.wellFreq.coerceIn(0, 2)) { i -> store.updateProfile { it.copy(wellFreq = i) } }
@@ -270,7 +257,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         Spacer(Modifier.height(18.dp))
         AddonCard(
             "While you rest",
-            "When you've been resting for a while, your sleeping companion wakes up and asks if everything's okay, and offers to start a block. It asks at most twice, then lets you be.",
+            "Only while you rest, never during a block: after a while your sleeping companion wakes up, asks if everything's okay and offers to start a block. It asks at most twice, then lets you be.",
             p.restOn, { on -> store.updateProfile { it.copy(restOn = on) } }, { store.nudges.begin("rest", "ask") },
         ) {
             Text("Wake up after", color = Ink.muted, fontSize = 12.sp)
@@ -282,12 +269,34 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         AddonCard(
             "Countdown",
             "A deadline that counts down on the Now page: an exam, a launch, a trip. Shows days, hours, minutes and seconds left.",
-            p.countdownOn, { on -> store.updateProfile { it.copy(countdownOn = on) } }, onTry = null,
+            p.countdownOn, { on ->
+                store.updateProfile {
+                    val fresh = on && (it.countdownAt == 0L || it.countdownAt <= nowMs())
+                    if (fresh) it.copy(countdownOn = true, countdownAt = defaultCountdownAt(nowMs()), countdownFrom = nowMs())
+                    else it.copy(countdownOn = on)
+                }
+            }, onTry = null,
         ) { CountdownSettings(store, v, platform) }
         Spacer(Modifier.height(18.dp))
         Muted("Have an idea for an add-on? Send it as a pull request on GitHub; add-ons are a great first contribution.", size = 12)
         Spacer(Modifier.height(40.dp))
     }
+}
+
+/** The two ticks each reminder add-on has: whether it may come during a block, and while resting. */
+@Composable
+private fun WhenTicks(blocks: Boolean, rest: Boolean, onBlocks: (Boolean) -> Unit, onRest: (Boolean) -> Unit) {
+    Text("Comes", color = Ink.muted, fontSize = 12.sp)
+    Spacer(Modifier.height(6.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+        TickBox("During blocks", blocks, onBlocks)
+        TickBox("While resting", rest, onRest)
+    }
+    if (!blocks && !rest) {
+        Spacer(Modifier.height(6.dp))
+        Muted("Tick at least one, or it never comes.", size = 12)
+    }
+    Spacer(Modifier.height(14.dp))
 }
 
 @Composable

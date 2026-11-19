@@ -64,8 +64,15 @@ data class Profile(
     val wellOn: Boolean = true,
     /** 0 rarely, 1 sometimes, 2 often. */
     val wellFreq: Int = 1,
-    /** Eye breaks, water and check-ins also while no block is running (whenever the pet is out). */
+    /** Old single "When" switch; replaced by the per-add-on ticks below and no longer read. */
     val addonsAnytime: Boolean = true,
+    /** When each add-on may come: during a block, and/or while resting. */
+    val eyeBlocks: Boolean = true,
+    val eyeRest: Boolean = false,
+    val waterBlocks: Boolean = true,
+    val waterRest: Boolean = false,
+    val wellBlocks: Boolean = false,
+    val wellRest: Boolean = true,
     /** While you rest: the sleeping companion wakes up after a while and checks on you. */
     val restOn: Boolean = true,
     val restAfter: Int = 30,
@@ -74,6 +81,8 @@ data class Profile(
     val countdownName: String = "",
     /** Local date and time it counts down to, in ms; 0 until one is picked. */
     val countdownAt: Long = 0,
+    /** When the current countdown was set, so its pill knows how much of the time is left. */
+    val countdownFrom: Long = 0,
     val updatedAt: Long = 0,
     /** When each setting last changed, so two devices changing different settings both keep their change. */
     val fieldTimes: Map<String, Long> = emptyMap(),

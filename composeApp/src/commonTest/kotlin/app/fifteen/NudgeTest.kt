@@ -45,16 +45,27 @@ class NudgeTest {
     }
 
     @Test
-    fun anytimeAddonsAlsoWhileResting() {
+    fun eachAddonsTicksDecideWhenItComes() {
         val s = Store(MemFiles(), CoroutineScope(Dispatchers.Unconfined))
         val now = nowMs()
-        s.updateProfile { it.copy(addons = true, waterOn = false, wellOn = false, restOn = false, addonsAnytime = false) }
+        s.updateProfile { it.copy(addons = true, waterOn = false, wellOn = false, restOn = false, eyeBlocks = true, eyeRest = false) }
         s.nudges.tick(now - 25 * 60_000L)
         s.nudges.tick(now)
-        assertNull(s.db.value.nudge.active, "only during blocks")
-        s.updateProfile { it.copy(addonsAnytime = true) }
+        assertNull(s.db.value.nudge.active, "eye breaks: during blocks only, so not while resting")
+        s.updateProfile { it.copy(eyeRest = true) }
         s.nudges.tick(now)
-        assertEquals("eye", s.db.value.nudge.active?.kind, "anytime: eye break while resting")
+        assertEquals("eye", s.db.value.nudge.active?.kind, "ticked \"While resting\": eye break while resting")
+    }
+
+    @Test
+    fun checkInsComeWhileRestingByDefaultNotDuringBlocks() {
+        val p = Profile(addons = true)
+        val n = Store(MemFiles(), CoroutineScope(Dispatchers.Unconfined)).nudges
+        assertTrue(n.allowedNow("well", p, Phase.Idle))
+        assertTrue(!n.allowedNow("well", p, Phase.Running))
+        assertTrue(n.allowedNow("eye", p, Phase.Running) && n.allowedNow("water", p, Phase.Running))
+        assertTrue(!n.allowedNow("eye", p, Phase.Idle) && !n.allowedNow("water", p, Phase.Idle))
+        assertTrue(n.allowedNow("rest", p, Phase.Idle) && !n.allowedNow("rest", p, Phase.Running))
     }
 
     @Test
@@ -63,7 +74,7 @@ class NudgeTest {
         val now = nowMs()
         val ended = now - 40 * 60_000L
         s.mutateDb { it.copy(blocks = listOf(Block("b", "deep", startAt = ended - 15 * 60_000L, minutes = 15, stoppedAt = ended))) }
-        s.updateProfile { it.copy(addons = true, eyeOn = false, waterOn = false, wellOn = false, restOn = true, restAfter = 30, addonsAnytime = false) }
+        s.updateProfile { it.copy(addons = true, eyeOn = false, waterOn = false, wellOn = false, restOn = true, restAfter = 30) }
         s.nudges.tick(ended)
         s.nudges.tick(now)
         assertEquals("rest", s.db.value.nudge.active?.kind)

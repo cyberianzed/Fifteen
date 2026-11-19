@@ -130,7 +130,7 @@ fun rememberView(store: Store, stepMs: Long = 1000): View {
  * floating bar and inside the apps.
  */
 @Composable
-fun FocusBar(v: View, modifier: Modifier = Modifier, showQuote: Boolean = true, onClick: (() -> Unit)? = null) {
+fun FocusBar(v: View, modifier: Modifier = Modifier, showQuote: Boolean = true, countdown: Boolean = false, onClick: (() -> Unit)? = null) {
     val color = v.category?.color?.asColor() ?: Ink.mellow
     // The "check in" pulse only runs while a check-in is waiting, and at 20 frames a second.
     val pulse by rememberSlowClock(if (v.phase == Phase.Due) 20 else 0)
@@ -146,6 +146,21 @@ fun FocusBar(v: View, modifier: Modifier = Modifier, showQuote: Boolean = true, 
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(if (v.phase == Phase.Due) Ink.mellow.copy(alpha = glow) else color))
         Spacer(Modifier.width(9.dp))
+        if (countdown) {
+            val p = v.db.profile
+            Column(Modifier.weight(1f)) {
+                Text(p.countdownName.ifBlank { "Countdown" }, color = Ink.text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(5.dp))
+                CountdownPill(countdownFraction(p, v.now), Modifier.fillMaxWidth().height(4.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                (p.countdownAt - v.now).let { if (it > 0) countdownShort(it) else "time's up" },
+                color = Ink.text.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
+            )
+            return@Row
+        }
         when (v.phase) {
             Phase.Idle -> {
                 Text("Paused — tap to start a block", color = Ink.muted, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)
@@ -242,11 +257,11 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, color: Color = In
 }
 
 @Composable
-fun GhostButton(text: String, modifier: Modifier = Modifier, color: Color = Ink.muted, hPad: Dp = 18.dp, onClick: () -> Unit) {
+fun GhostButton(text: String, modifier: Modifier = Modifier, color: Color = Ink.muted, hPad: Dp = 18.dp, border: Color = Color(0x22FFFFFF), onClick: () -> Unit) {
     Box(
         modifier
             .clip(RoundedCornerShape(50))
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(50))
+            .border(1.dp, border, RoundedCornerShape(50))
             .clickable(onClick = onClick)
             .padding(horizontal = hPad, vertical = 11.dp),
         contentAlignment = Alignment.Center,
@@ -460,5 +475,31 @@ private fun CountdownMini(v: View) {
             style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
         )
         Text(p.countdownName.ifBlank { "countdown" }, color = Ink.faint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(4.dp))
+        CountdownPill(countdownFraction(p, v.now), Modifier.fillMaxWidth().height(4.dp))
+    }
+}
+
+/** A small tick box with its label; the whole row is clickable. */
+@Composable
+fun TickBox(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.clip(RoundedCornerShape(8.dp)).clickable { onChange(!checked) }.padding(vertical = 6.dp, horizontal = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(18.dp).clip(RoundedCornerShape(5.dp))
+                .background(if (checked) Ink.mellow else Color.Transparent)
+                .border(1.5.dp, if (checked) Ink.mellow else Ink.faint, RoundedCornerShape(5.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (checked) Canvas(Modifier.size(10.dp)) {
+                val s = size.width
+                drawLine(Color(0xFF1A1405), Offset(s * 0.08f, s * 0.55f), Offset(s * 0.4f, s * 0.85f), strokeWidth = s * 0.2f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(Color(0xFF1A1405), Offset(s * 0.4f, s * 0.85f), Offset(s * 0.95f, s * 0.15f), strokeWidth = s * 0.2f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(label, color = Ink.text, fontSize = 13.sp)
     }
 }
