@@ -103,7 +103,7 @@ class TrackerService : Service() {
             scheduleAlarm(live.endAt)
             lastAlarmFor = "${live.id}:${live.minutes}"
         }
-        if (phase == Phase.Due && live != null && lastDueNotified != live.id) {
+        if (phase == Phase.Due && live != null && lastDueNotified != live.id && store.startedHere(live)) {
             lastDueNotified = live.id
             nm.notify(DUE_ID, buildDueNotification(live))
         }

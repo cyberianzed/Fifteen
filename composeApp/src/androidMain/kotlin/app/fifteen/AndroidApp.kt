@@ -205,8 +205,10 @@ class ActionReceiver : BroadcastReceiver() {
             ACTION_OFF -> { if (store.phase() == Phase.Idle) turnOff(context); return }
             ACTION_ALARM -> {
                 // Block ended: the companion's sound, then the check-in right away if we may draw over other apps.
-                if (store.phase() == Phase.Due) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
-                if (store.phase() == Phase.Due && Settings.canDrawOverlays(context)) runCatching { openCheckIn(context) }
+                // Only the device that started the block asks; the other one just shows "check in".
+                val here = store.liveBlock()?.let { store.startedHere(it) } ?: false
+                if (here && store.phase() == Phase.Due) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
+                if (here && store.phase() == Phase.Due && Settings.canDrawOverlays(context)) runCatching { openCheckIn(context) }
             }
         }
         runCatching { startTracker(context) }

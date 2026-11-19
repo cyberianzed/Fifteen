@@ -72,8 +72,9 @@ fun countdownFraction(p: Profile, now: Long): Float {
 }
 
 /**
- * The time-left pill: a rounded bar that shrinks as the deadline nears, with a glowing head. It warms from
- * mellow yellow to coral in the last fifth of the time.
+ * The time-left capsule, like a timer Live Activity or a battery: an outlined capsule with a solid capsule
+ * inside that drains from full to empty, right to left. No glow. It turns coral in the last fifth of the time.
+ * Small sizes (the pet, the bar) drop the outline and are just the draining capsule on a faint track.
  */
 @Composable
 fun CountdownPill(fraction: Float, modifier: Modifier = Modifier) {
@@ -81,18 +82,25 @@ fun CountdownPill(fraction: Float, modifier: Modifier = Modifier) {
     val color = androidx.compose.ui.graphics.lerp(Ink.mellow, Ink.coral, warm)
     androidx.compose.foundation.Canvas(modifier) {
         val h = size.height
-        val r = androidx.compose.ui.geometry.CornerRadius(h / 2)
-        drawRoundRect(androidx.compose.ui.graphics.Color(0x1FFFFFFF), cornerRadius = r)
-        if (fraction > 0f) {
-            val w = (size.width * fraction).coerceAtLeast(h)
+        val outlined = h >= 12.dp.toPx()
+        val inset = if (outlined) 3.dp.toPx() else 0f
+        if (outlined) {
             drawRoundRect(
-                androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(color.copy(alpha = 0.35f), color), 0f, w),
-                size = androidx.compose.ui.geometry.Size(w, h), cornerRadius = r,
+                androidx.compose.ui.graphics.Color(0x33FFFFFF), cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()),
             )
-            val head = androidx.compose.ui.geometry.Offset(w - h / 2, h / 2)
-            drawCircle(color.copy(alpha = 0.18f), radius = h * 1.6f, center = head)
-            drawCircle(color.copy(alpha = 0.35f), radius = h * 1.05f, center = head)
-            drawCircle(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f), radius = h * 0.32f, center = head)
+        } else {
+            drawRoundRect(androidx.compose.ui.graphics.Color(0x1FFFFFFF), cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2))
+        }
+        val ih = h - inset * 2
+        val w = (size.width - inset * 2) * fraction.coerceIn(0f, 1f)
+        if (w > 0f) {
+            // Stays a capsule as it empties; the last sliver narrows instead of leaving a stuck dot.
+            drawRoundRect(
+                color, topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                size = androidx.compose.ui.geometry.Size(w, ih),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(minOf(ih / 2, w / 2)),
+            )
         }
     }
 }
@@ -113,7 +121,7 @@ fun CountdownCard(store: Store, v: View) {
                     style = TextStyle(fontFeatureSettings = "tnum"))
                 Spacer(Modifier.height(12.dp))
                 val fraction = countdownFraction(p, v.now)
-                CountdownPill(fraction, Modifier.fillMaxWidth().height(10.dp))
+                CountdownPill(fraction, Modifier.fillMaxWidth().height(18.dp))
                 Spacer(Modifier.height(10.dp))
                 Row {
                     Muted("until ${countdownWhen(p.countdownAt)}", size = 12, modifier = Modifier.weight(1f))

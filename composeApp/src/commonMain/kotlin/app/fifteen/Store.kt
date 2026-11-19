@@ -42,6 +42,9 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
     private val _skipped = MutableStateFlow<String?>(null)
     val skippedCheckIn: StateFlow<String?> = _skipped.asStateFlow()
 
+    /** Whether [b] was started on this device: only that device pops up its check-in (the others just show it). */
+    fun startedHere(b: Block): Boolean = b.device.isBlank() || b.device == _prefs.value.deviceId
+
     /** Puts off rating [blockId]: the pet keeps showing "check in" and the popup doesn't come back for it. */
     fun skipCheckIn(blockId: String) { _skipped.value = blockId }
 

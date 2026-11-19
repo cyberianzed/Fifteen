@@ -281,7 +281,7 @@ class ScreenshotTest {
     @Test
     fun countdownShots() {
         val store = seededStore()
-        store.updateProfile { it.copy(addons = true, countdownOn = true, countdownName = "Exam", countdownAt = nowMs() + 3 * 86_400_000L + 4 * 3_600_000L + 754_000L) }
+        store.updateProfile { it.copy(addons = true, countdownOn = true, countdownName = "Exam", countdownAt = nowMs() + 3 * 86_400_000L + 4 * 3_600_000L + 754_000L, countdownFrom = nowMs() - 9 * 86_400_000L) }
         store.updatePrefs { it.copy(countdownOnPet = true) }
         shot("countdown-now", 1280, 1100) { FifteenApp(store, platform, Tab.Now) }
         shot("countdown-addon", 1280, 2600) { FifteenApp(store, platform, Tab.Addons) }

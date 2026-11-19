@@ -48,4 +48,14 @@ class CountdownTest {
         assertEquals(Phase.Due, store.phase(live.endAt + 1)) // still there to rate later
         assertFalse(store.db.value.blocks.first { it.id == live.id }.rated)
     }
+
+    @Test
+    fun onlyTheDeviceThatStartedABlockPopsUpItsCheckIn() {
+        val store = Store(MemFiles(), CoroutineScope(Dispatchers.Unconfined))
+        store.start("deep", 15)
+        val mine = store.liveBlock()!!
+        assertTrue(store.startedHere(mine))
+        assertFalse(store.startedHere(mine.copy(device = "phone123")))
+        assertTrue(store.startedHere(mine.copy(device = ""))) // older blocks without a device: ask everywhere
+    }
 }

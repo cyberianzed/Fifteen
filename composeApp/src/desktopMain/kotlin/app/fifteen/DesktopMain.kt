@@ -119,6 +119,7 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
         val id = v.live?.id ?: return@LaunchedEffect
         if (v.phase != Phase.Due) return@LaunchedEffect
         if (store.skippedCheckIn.value == id) return@LaunchedEffect // put off with "Skip for now": waits on the pet
+        if (!store.startedHere(v.live!!)) return@LaunchedEffect // started on the phone: the phone asks
         if (promptedAt.second != id || (!checkInOpen && v.now - promptedAt.first > 10 * 60_000L)) {
             promptedAt = v.now to id
             if (!checkInOpen) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
