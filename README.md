@@ -100,6 +100,7 @@ Little helpers your companion brings up in a chat bubble that comes right out of
 - **Water:** a reminder, then a friendly "did you drink?" later. It tells you how much is a good amount and offers to remind you again.
 - **Check-ins:** "Everything okay? Feeling productive?" If not, a small idea to reset, like a stretch, a walk or some water.
 - **While you rest:** after a while, your sleeping companion wakes up, asks if everything's okay and offers to start a block. Twice at most, then it lets you be.
+- **Countdown:** a deadline (an exam, a launch, a trip) counting down on the Now page, down to the second. On Windows the pet can show it too; during a block, right-click the pet to switch between the block timer and the countdown.
 
 They come **anytime** your pet is out, or **only during blocks** if you prefer. Hide the pet and they stay quiet.
 

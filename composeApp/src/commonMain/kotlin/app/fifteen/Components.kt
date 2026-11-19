@@ -421,7 +421,8 @@ fun FadeIf(visible: Boolean, content: @Composable () -> Unit) {
 
 /** The tiny timer under the companion in pet mode. */
 @Composable
-fun MiniTimer(v: View) {
+fun MiniTimer(v: View, countdown: Boolean = false) {
+    if (countdown) { CountdownMini(v); return }
     val color = v.category?.color?.asColor() ?: Ink.mellow
     Column(
         Modifier.width(132.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD9121318))
@@ -440,5 +441,24 @@ fun MiniTimer(v: View) {
             Spacer(Modifier.height(4.dp))
             ThinProgress(v.progress, color, Modifier.fillMaxWidth().height(3.dp))
         }
+    }
+}
+
+/** The pet's little timer showing the countdown add-on: time left, and its name underneath. */
+@Composable
+private fun CountdownMini(v: View) {
+    val p = v.db.profile
+    val left = p.countdownAt - v.now
+    Column(
+        Modifier.width(132.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD9121318))
+            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            if (left > 0) countdownShort(left) else "time's up",
+            color = if (left > 0) Ink.text else Ink.mellow, fontSize = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp,
+            style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
+        )
+        Text(p.countdownName.ifBlank { "countdown" }, color = Ink.faint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

@@ -182,7 +182,7 @@ private fun RingTimer(progress: Float, label: String) {
 // ---------------- Add-ons tab ----------------
 
 @Composable
-fun AddonsScreen(store: Store, wide: Boolean) {
+fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
     val v = rememberView(store, 5000)
     val p = v.db.profile
     val n = v.db.nudge
@@ -200,8 +200,9 @@ fun AddonsScreen(store: Store, wide: Boolean) {
                 Segmented(listOf("Anytime", "Only during blocks"), if (p.addonsAnytime) 0 else 1) { i -> store.updateProfile { it.copy(addonsAnytime = i == 0) } }
                 Spacer(Modifier.height(8.dp))
                 Muted(
-                    if (p.addonsAnytime) "Reminders keep coming while you rest too, as long as your pet is out."
-                    else "Reminders only come while a block is running.",
+                    (if (p.addonsAnytime) "Eye breaks, water and check-ins keep coming while you rest too, as long as your pet is out."
+                    else "Eye breaks, water and check-ins only come while a block is running.") +
+                        " \"While you rest\" only ever comes while you rest.",
                     size = 12,
                 )
             }
@@ -278,21 +279,29 @@ fun AddonsScreen(store: Store, wide: Boolean) {
             Segmented(listOf("20m", "30m", "45m", "1h"), options.indexOf(p.restAfter).coerceAtLeast(0)) { i -> store.updateProfile { it.copy(restAfter = options[i]) } }
         }
         Spacer(Modifier.height(18.dp))
+        AddonCard(
+            "Countdown",
+            "A deadline that counts down on the Now page: an exam, a launch, a trip. Shows days, hours, minutes and seconds left.",
+            p.countdownOn, { on -> store.updateProfile { it.copy(countdownOn = on) } }, onTry = null,
+        ) { CountdownSettings(store, v, platform) }
+        Spacer(Modifier.height(18.dp))
         Muted("Have an idea for an add-on? Send it as a pull request on GitHub; add-ons are a great first contribution.", size = 12)
         Spacer(Modifier.height(40.dp))
     }
 }
 
 @Composable
-private fun AddonCard(title: String, blurb: String, on: Boolean, onToggle: (Boolean) -> Unit, onTry: () -> Unit, settings: @Composable () -> Unit) {
+private fun AddonCard(title: String, blurb: String, on: Boolean, onToggle: (Boolean) -> Unit, onTry: (() -> Unit)?, settings: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column {
             Toggle(title, on, blurb, onToggle)
             if (on) {
                 Spacer(Modifier.height(12.dp))
                 settings()
-                Spacer(Modifier.height(14.dp))
-                GhostButton("Try it now", onClick = onTry)
+                if (onTry != null) {
+                    Spacer(Modifier.height(14.dp))
+                    GhostButton("Try it now", onClick = onTry)
+                }
             }
         }
     }

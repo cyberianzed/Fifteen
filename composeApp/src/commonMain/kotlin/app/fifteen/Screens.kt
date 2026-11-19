@@ -108,13 +108,20 @@ private fun Hero(store: Store, v: View, platform: PlatformUi, onFocus: () -> Uni
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             PetView(v.db.profile.avatar, v.petState(), Modifier.size(240.dp))
             val goal = v.db.profile.dailyGoal
-            Text("${v.dayPoints}", color = Ink.text, fontSize = 34.sp, fontWeight = FontWeight.Light)
-            Muted(if (v.dayPoints >= goal) "points today · goal reached" else "of $goal points today")
-            Spacer(Modifier.height(10.dp))
-            ThinProgress((v.dayPoints.toFloat() / goal).coerceIn(0f, 1f), Ink.mellow, Modifier.width(200.dp).height(3.dp))
-            Spacer(Modifier.height(28.dp))
-            Hairline()
-            Spacer(Modifier.height(24.dp))
+            val points: @Composable () -> Unit = {
+                Text("${v.dayPoints}", color = Ink.text, fontSize = 34.sp, fontWeight = FontWeight.Light)
+                Muted(if (v.dayPoints >= goal) "points today · goal reached" else "of $goal points today")
+                Spacer(Modifier.height(10.dp))
+                ThinProgress((v.dayPoints.toFloat() / goal).coerceIn(0f, 1f), Ink.mellow, Modifier.width(200.dp).height(3.dp))
+            }
+            // During a block the timer comes first, right under the pet; the day's points move below the buttons.
+            val live = v.phase != Phase.Idle
+            if (!live) {
+                points()
+                Spacer(Modifier.height(28.dp))
+                Hairline()
+                Spacer(Modifier.height(24.dp))
+            } else Spacer(Modifier.height(8.dp))
             when (v.phase) {
                 Phase.Running -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,6 +157,12 @@ private fun Hero(store: Store, v: View, platform: PlatformUi, onFocus: () -> Uni
                     PrimaryButton("Start a block") { platform.openCheckIn() }
                 }
             }
+            if (live) {
+                Spacer(Modifier.height(28.dp))
+                Hairline()
+                Spacer(Modifier.height(24.dp))
+                points()
+            }
         }
       }
     }
@@ -159,6 +172,7 @@ private fun Hero(store: Store, v: View, platform: PlatformUi, onFocus: () -> Uni
 @Composable
 private fun TodayColumn(store: Store, v: View) {
     val today = remember(v.db, v.today) { computeInsights(v.db, DayRange(v.today, v.today)) }
+    if (countdownActive(v.db.profile)) CountdownCard(store, v)
     Card(Modifier.fillMaxWidth()) {
         Column {
             SectionTitle("Today", "Each square is fifteen minutes. Brighter means more focused.")

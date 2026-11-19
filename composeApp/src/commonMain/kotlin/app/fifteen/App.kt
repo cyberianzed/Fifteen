@@ -104,7 +104,7 @@ private fun TabContent(tab: Tab, store: Store, platform: PlatformUi, wide: Boole
         when (t) {
             Tab.Now -> NowScreen(store, platform, wide, onFocus)
             Tab.Insights -> InsightsScreen(store, wide, insightsOffset)
-            Tab.Addons -> AddonsScreen(store, wide)
+            Tab.Addons -> AddonsScreen(store, wide, platform)
             Tab.Garden -> GardenScreen(store, wide)
             Tab.Settings -> SettingsScreen(store, platform, wide)
         }

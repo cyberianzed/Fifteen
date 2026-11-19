@@ -38,6 +38,13 @@ class Store(private val files: TextFiles, private val scope: CoroutineScope) {
             .maxOrNull()?.let { observe(it) }
     }
 
+    /** The finished block whose check-in was put off with "Skip for now"; it isn't popped up again. */
+    private val _skipped = MutableStateFlow<String?>(null)
+    val skippedCheckIn: StateFlow<String?> = _skipped.asStateFlow()
+
+    /** Puts off rating [blockId]: the pet keeps showing "check in" and the popup doesn't come back for it. */
+    fun skipCheckIn(blockId: String) { _skipped.value = blockId }
+
     private val _reveal = MutableStateFlow<Reveal?>(null)
     val reveal: StateFlow<Reveal?> = _reveal.asStateFlow()
 

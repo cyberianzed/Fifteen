@@ -64,7 +64,7 @@ fun CheckInPanel(store: Store, modifier: Modifier = Modifier, onClose: () -> Uni
 
     Column(modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         when {
-            dueBlock != null -> RateStep(store, dueBlock, v)
+            dueBlock != null -> RateStep(store, dueBlock, v, onSkip = { store.skipCheckIn(dueBlock.id); onClose() })
             reveal != null -> RevealStep(reveal!!, v)
         }
         if (dueBlock == null) {
@@ -75,8 +75,11 @@ fun CheckInPanel(store: Store, modifier: Modifier = Modifier, onClose: () -> Uni
 }
 
 @Composable
-private fun RateStep(store: Store, block: Block, v: View) {
+private fun RateStep(store: Store, block: Block, v: View, onSkip: () -> Unit) {
     val cat = store.category(block.categoryId, v.db)
+    // The popup can appear mid-click or mid-typing: the choices only respond after a moment.
+    val armedAt = remember(block.id) { nowMs() + 1_000 }
+    fun armed() = nowMs() >= armedAt
     val rest = cat?.rest == true
     Label(if (rest) "Break's over" else "Check in", color = cat?.color?.asColor() ?: Ink.mellow)
     VerticalGap(10.dp)
@@ -92,7 +95,7 @@ private fun RateStep(store: Store, block: Block, v: View) {
     }
     VerticalGap(26.dp)
     if (rest) {
-        PrimaryButton("I'm back", onClick = { store.rate(block.id, 100) })
+        PrimaryButton("I'm back", onClick = { if (armed()) store.rate(block.id, 100) })
     } else {
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             // Circles shrink to fit narrow phones; 62dp max on wide screens.
@@ -102,7 +105,7 @@ private fun RateStep(store: Store, block: Block, v: View) {
                 val words = listOf("drifted", "half", "most", "nearly", "all of it")
                 RATINGS.forEachIndexed { i, r ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(size)) {
-                        RatingChoice(r, size) { store.rate(block.id, r) }
+                        RatingChoice(r, size) { if (armed()) store.rate(block.id, r) }
                         VerticalGap(8.dp)
                         Text(words[i], color = Ink.faint, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
                     }
@@ -110,10 +113,14 @@ private fun RateStep(store: Store, block: Block, v: View) {
             }
         }
     }
-    VerticalGap(20.dp)
+    VerticalGap(24.dp)
+    PrimaryButton("Skip for now", onClick = onSkip)
+    VerticalGap(6.dp)
+    Muted("It waits on your pet; rate it whenever you like.", size = 12)
+    VerticalGap(16.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        GhostButton("+5 min") { store.extend(5) }
-        GhostButton("Stop tracking") { store.stopTracking() }
+        GhostButton("+5 min") { if (armed()) store.extend(5) }
+        GhostButton("Stop tracking") { if (armed()) store.stopTracking() }
     }
 }
 

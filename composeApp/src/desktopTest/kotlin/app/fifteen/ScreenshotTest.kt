@@ -136,7 +136,7 @@ class ScreenshotTest {
             }
         }
         val due = seededStore(Phase.Due)
-        doc("checkin-rate", 600, 460, 2f) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
+        doc("checkin-rate", 600, 580, 2f) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
         due.rate("live", 100)
         doc("companions", 780, 300, 2f) {
             FifteenTheme {
@@ -165,7 +165,7 @@ class ScreenshotTest {
         ph("settings", 2200) { FifteenApp(store, platform, Tab.Settings) }
         val due = seededStore(Phase.Due)
         // As in CheckInActivity: 14dp margin around the card.
-        ph("checkin-rate", 520) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
+        ph("checkin-rate", 620) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
         due.rate("live", 90)
         ph("checkin-next", 900) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg).padding(14.dp)) { CheckInPanel(due) {} } } }
     }
@@ -235,7 +235,7 @@ class ScreenshotTest {
     @Test
     fun checkInAndBar() {
         val due = seededStore(Phase.Due)
-        shot("07-checkin-rate", 640, 620) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
+        shot("07-checkin-rate", 640, 720) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
         due.rate("live", 90)
         shot("08-checkin-next", 640, 900) { FifteenTheme { Box(Modifier.fillMaxSize().background(Ink.bg)) { CheckInPanel(due) {} } } }
         val running = seededStore()
@@ -275,5 +275,22 @@ class ScreenshotTest {
         val px = IntArray(img.width * img.height).also { img.getRGB(0, 0, img.width, img.height, it, 0, img.width) }
         val bitmap = com.google.zxing.BinaryBitmap(com.google.zxing.common.HybridBinarizer(com.google.zxing.RGBLuminanceSource(img.width, img.height, px)))
         kotlin.test.assertEquals("fifteen://key/F15-7KQ2-M9XD-4TPA-HW3C-8NRB-Q5ZE", com.google.zxing.qrcode.QRCodeReader().decode(bitmap).text)
+    }
+
+    /** The countdown add-on: its box on the Now page during a block, its settings, and the pet showing it. */
+    @Test
+    fun countdownShots() {
+        val store = seededStore()
+        store.updateProfile { it.copy(addons = true, countdownOn = true, countdownName = "Exam", countdownAt = nowMs() + 3 * 86_400_000L + 4 * 3_600_000L + 754_000L) }
+        store.updatePrefs { it.copy(countdownOnPet = true) }
+        shot("countdown-now", 1280, 1100) { FifteenApp(store, platform, Tab.Now) }
+        shot("countdown-addon", 1280, 2600) { FifteenApp(store, platform, Tab.Addons) }
+        shot("countdown-pet", 220, 260) {
+            FifteenTheme {
+                Box(Modifier.fillMaxSize().background(Ink.bg), contentAlignment = Alignment.BottomCenter) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) { MiniTimer(rememberView(store), countdown = true) }
+                }
+            }
+        }
     }
 }

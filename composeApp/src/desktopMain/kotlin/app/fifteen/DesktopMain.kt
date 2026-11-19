@@ -118,6 +118,7 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
     LaunchedEffect(v.phase, v.live?.id, v.now / 60_000) {
         val id = v.live?.id ?: return@LaunchedEffect
         if (v.phase != Phase.Due) return@LaunchedEffect
+        if (store.skippedCheckIn.value == id) return@LaunchedEffect // put off with "Skip for now": waits on the pet
         if (promptedAt.second != id || (!checkInOpen && v.now - promptedAt.first > 10 * 60_000L)) {
             promptedAt = v.now to id
             if (!checkInOpen) Sounds.play(Sfx.Due, store.db.value.profile.avatar)
@@ -197,6 +198,12 @@ private fun ApplicationScope.DesktopApp(store: Store, startMinimized: Boolean, s
                 Phase.Idle -> add("Start a block" to { checkInOpen = true })
                 Phase.Due -> add("Check in" to { checkInOpen = true })
                 Phase.Running -> add("Switch activity" to { checkInOpen = true })
+            }
+            if (v.phase == Phase.Running && prefs.countdownOnPet && countdownActive(v.db.profile)) {
+                val showing = prefs.petTimer == "countdown"
+                add((if (showing) "Show block timer" else "Show countdown") to {
+                    store.updatePrefs { it.copy(petTimer = if (showing) "block" else "countdown") }
+                })
             }
             add(HIDE_LABEL to { store.hidePet() })
             add((if (prefs.barMode == "pet") "Show extended bar" else "Show pet only") to {
@@ -444,7 +451,10 @@ private fun FloatingBar(
             if (petMode) {
                 Column(drag, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
                     PetView(v.db.profile.avatar, v.petState(), Modifier.size(196.dp), interactive = false, poke = poke)
-                    MiniTimer(v)
+                    // The countdown add-on on the pet: shown while resting, or during a block when chosen.
+                    val countdown = prefs.countdownOnPet && countdownActive(v.db.profile) &&
+                        (v.phase == Phase.Idle || (v.phase == Phase.Running && prefs.petTimer == "countdown"))
+                    MiniTimer(v, countdown)
                     Spacer(Modifier.height(6.dp))
                 }
             } else {
