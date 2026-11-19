@@ -444,8 +444,11 @@ private fun FloatingBar(
                     delay(5 * 60_000L)
                 }
             }
-            val onClickLatest = rememberUpdatedState<(Float) -> Unit> { x ->
-                    if (petMode || x <= petW * density) poke++
+            val onClickLatest = rememberUpdatedState<(androidx.compose.ui.geometry.Offset) -> Unit> { at ->
+                    val x = at.x
+                    // In pet mode the little box under the pet says "check in" when a block is done: clicking it opens the check-in.
+                    if (petMode && v.phase == Phase.Due && at.y > 196 * s * density) onOpen()
+                    else if (petMode || x <= petW * density) poke++
                     else {
                         pendingOpen?.cancel()
                         pendingOpen = scope.launch { delay(330); onOpen() }
@@ -513,7 +516,7 @@ private fun scaleMismatch(w: java.awt.Window, drawScale: Float): Float {
  */
 private fun Modifier.moveWindowOnDrag(
     window: ComposeWindow,
-    onClick: (Float) -> Unit,
+    onClick: (androidx.compose.ui.geometry.Offset) -> Unit,
     onDoubleClick: () -> Unit,
     onRightClick: (java.awt.Point) -> Unit,
     onMoved: (Int, Int) -> Unit,
@@ -544,7 +547,7 @@ private fun Modifier.moveWindowOnDrag(
             } else {
                 val now = System.currentTimeMillis()
                 if (now - lastClick < 350) { lastClick = 0; onDoubleClick() }
-                else { lastClick = now; onClick(down.changes.first().position.x) }
+                else { lastClick = now; onClick(down.changes.first().position) }
             }
         }
     }

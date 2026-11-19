@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -459,14 +460,25 @@ fun MiniTimer(v: View, countdown: Boolean = false) {
     }
 }
 
-/** The pet's little timer showing the countdown add-on: time left, and its name underneath. */
+/**
+ * The pet's little timer showing the countdown add-on: time left and its name (plus "% left" if chosen), over a
+ * soft fill that drains from the right, green → yellow → coral. No animation: it just gets shorter each second.
+ */
 @Composable
 private fun CountdownMini(v: View) {
     val p = v.db.profile
     val left = p.countdownAt - v.now
+    val fraction = countdownFraction(p, v.now)
+    val fill = countdownColor(fraction).copy(alpha = 0.28f)
     Column(
         Modifier.width(132.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD9121318))
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+            .drawBehind {
+                val r = 14.dp.toPx()
+                val fw = size.width * fraction
+                if (fw > 0f) drawRoundRect(fill, size = androidx.compose.ui.geometry.Size(fw, size.height),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(minOf(r, fw / 2)))
+            }
+            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -474,9 +486,8 @@ private fun CountdownMini(v: View) {
             color = if (left > 0) Ink.text else Ink.mellow, fontSize = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp,
             style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"),
         )
-        Text(p.countdownName.ifBlank { "countdown" }, color = Ink.faint, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Spacer(Modifier.height(4.dp))
-        CountdownPill(countdownFraction(p, v.now), Modifier.fillMaxWidth().height(4.dp))
+        val name = p.countdownName.ifBlank { "countdown" }
+        Text(if (v.prefs.countdownPercent && left > 0) "$name · ${(fraction * 100).toInt()}% left" else name, color = Ink.muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

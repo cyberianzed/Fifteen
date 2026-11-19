@@ -99,10 +99,10 @@ Little helpers your companion brings up in a chat bubble that comes right out of
 - **Eye breaks (20-20-20):** every 20 minutes, look about 6 metres away for 20 seconds, with a small timer.
 - **Water:** a reminder, then a friendly "did you drink?" later. It tells you how much is a good amount and offers to remind you again.
 - **Check-ins:** "Everything okay? Feeling productive?" If not, a small idea to reset, like a stretch, a walk or some water.
-- **While you rest:** after a while, your sleeping companion wakes up, asks if everything's okay and offers to start a block. Twice at most, then it lets you be.
-- **Countdown:** a deadline (an exam, a launch, a trip) counting down on the Now page, down to the second. On Windows the pet can show it too; during a block, right-click the pet to switch between the block timer and the countdown.
+- **Back-to-it nudge:** only while you rest: after a while, your sleeping companion wakes up, asks if everything's okay and offers to start a block. Twice at most, then it lets you be.
+- **Countdown:** a deadline (an exam, a launch, a trip) counting down on the Now page, down to the second, with a bar that drains as the time runs out. Tick **Show on the pet** and the little box under your companion fills softly and drains too, green → yellow → coral (tick **Show percentage** to add "38% left"). During a block, right-click the pet (long-press on the phone) to switch between the block timer and the countdown.
 
-They come **anytime** your pet is out, or **only during blocks** if you prefer. Hide the pet and they stay quiet.
+Each reminder has two ticks, **Focus blocks** and **Resting**, so it comes only when you want it. Hide the pet and they stay quiet.
 
 <p align="center">
   <img src="docs/screenshots/addon-eye-break.png" alt="An eye break coming out of the floating tree, with a 20-second timer" width="420">
@@ -110,7 +110,7 @@ They come **anytime** your pet is out, or **only during blocks** if you prefer. 
   <img src="docs/screenshots/addon-water.png" alt="The tree asking if you drank some water" width="420">
 </p>
 <p align="center">
-  <img src="docs/screenshots/addon-rest.png" alt="While you rest, the tree wakes up and checks on you" width="420">
+  <img src="docs/screenshots/addon-rest.png" alt="Back-to-it nudge: the tree wakes up and checks on you" width="420">
 </p>
 
 **Have an idea for an add-on?** See [Contributing](#contributing).

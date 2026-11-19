@@ -64,9 +64,14 @@ fun defaultCountdownAt(now: Long): Long {
     return if (now < elevenPm - 3_600_000L) elevenPm else (now / 3_600_000L + 2) * 3_600_000L
 }
 
-/** How much of the countdown's time is left, 1 → 0, measured from when it was set. */
+/**
+ * How much of the countdown's time is left, 1 → 0. Measured over at least a full day, so a deadline tonight
+ * shows how little of the day is left (3 hours left ≈ 12%), not "98%" just because it was set a minute ago.
+ * Longer countdowns are measured from when they were set.
+ */
 fun countdownFraction(p: Profile, now: Long): Float {
-    val from = if (p.countdownFrom in 1 until p.countdownAt) p.countdownFrom else p.countdownAt - 86_400_000L
+    val dayBefore = p.countdownAt - 86_400_000L
+    val from = if (p.countdownFrom in 1 until p.countdownAt) minOf(p.countdownFrom, dayBefore) else dayBefore
     val span = (p.countdownAt - from).coerceAtLeast(1)
     return ((p.countdownAt - now).toFloat() / span).coerceIn(0f, 1f)
 }
@@ -86,10 +91,12 @@ fun CountdownPill(fraction: Float, modifier: Modifier = Modifier) {
         drawRoundRect(color.copy(alpha = 0.16f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2))
         val w = size.width * fraction.coerceIn(0f, 1f)
         if (w > 0f) {
-            // A very slight glow around the remaining time: two faint, slightly larger capsules behind it.
-            for ((grow, alpha) in listOf(h * 0.55f to 0.05f, h * 0.28f to 0.09f)) {
+            // A very slight glow: many faint layers that fade out smoothly, so there's no visible edge or ring.
+            val steps = 10
+            for (i in steps downTo 1) {
+                val grow = h * 0.6f * i / steps
                 drawRoundRect(
-                    color.copy(alpha = alpha), topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
+                    color.copy(alpha = 0.014f), topLeft = androidx.compose.ui.geometry.Offset(-grow, -grow),
                     size = androidx.compose.ui.geometry.Size(w + grow * 2, h + grow * 2),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(minOf(h / 2, w / 2) + grow),
                 )
@@ -100,6 +107,17 @@ fun CountdownPill(fraction: Float, modifier: Modifier = Modifier) {
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(minOf(h / 2, w / 2)),
             )
         }
+    }
+}
+
+/** The pet's countdown fill colour: green while there's plenty, yellow around half, coral near the end. */
+fun countdownColor(fraction: Float): androidx.compose.ui.graphics.Color {
+    return when {
+        fraction >= 0.6f -> Ink.good
+        fraction >= 0.4f -> androidx.compose.ui.graphics.lerp(Ink.mellow, Ink.good, (fraction - 0.4f) / 0.2f)
+        fraction >= 0.25f -> Ink.mellow
+        fraction >= 0.1f -> androidx.compose.ui.graphics.lerp(Ink.coral, Ink.mellow, (fraction - 0.1f) / 0.15f)
+        else -> Ink.coral
     }
 }
 
@@ -123,7 +141,7 @@ fun CountdownCard(store: Store, v: View) {
                 Spacer(Modifier.height(10.dp))
                 Row {
                     Muted("until ${countdownWhen(p.countdownAt)}", size = 12, modifier = Modifier.weight(1f))
-                    Muted("${(fraction * 100).toInt()}% of the time left", size = 12)
+                    Muted("${(fraction * 100).toInt()}% left", size = 12)
                 }
             } else {
                 Text("Time's up", color = Ink.mellow, fontSize = 28.sp, fontWeight = FontWeight.Light)
@@ -160,11 +178,18 @@ fun CountdownSettings(store: Store, v: View, platform: PlatformUi) {
         GhostButton(formatDay(day, "EEE d MMM yyyy")) { pickDate = true }
         GhostButton(clockText(at)) { pickTime = true }
     }
-    if (platform.isDesktop) {
-        Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
         TickBox("Show on the pet", v.prefs.countdownOnPet) { on -> store.updatePrefs { it.copy(countdownOnPet = on) } }
-        Muted("While you rest the pet shows the countdown. During a block, right-click the pet to switch between the two.", size = 12)
+        if (v.prefs.countdownOnPet) {
+            TickBox("Show percentage", v.prefs.countdownPercent) { on -> store.updatePrefs { it.copy(countdownPercent = on) } }
+        }
     }
+    Muted(
+        "While you rest the pet shows the countdown. During a block, " +
+            (if (platform.isDesktop) "right-click" else "long-press") + " the pet to switch between the two.",
+        size = 12,
+    )
 
     if (pickDate) {
         val state = rememberDatePickerState(initialSelectedDateMillis = day * 86_400_000L)

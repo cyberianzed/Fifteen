@@ -1,11 +1,11 @@
 ; Windows installer for Fifteen (Inno Setup 6).
 ; Build the app folder first:  ./gradlew.bat -Pfifteen.public=true :composeApp:createDistributable
-; Then:  ISCC.exe /DAppVersion=1.1.0 packaging\windows\fifteen.iss
+; Then:  ISCC.exe /DAppVersion=1.1.1 packaging\windows\fifteen.iss
 ; Output: composeApp\build\installer\Fifteen-Setup.exe
 ; (jpackage's own .exe/.msi needs WiX ICE validation, which fails on Windows builds without VBScript.)
 
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.1.1"
 #endif
 #define AppDir "..\..\composeApp\build\compose\binaries\main\app\Fifteen"
 

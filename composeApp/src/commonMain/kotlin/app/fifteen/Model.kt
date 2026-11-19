@@ -73,7 +73,7 @@ data class Profile(
     val waterRest: Boolean = false,
     val wellBlocks: Boolean = false,
     val wellRest: Boolean = true,
-    /** While you rest: the sleeping companion wakes up after a while and checks on you. */
+    /** Back-to-it nudge (was "While you rest"): the sleeping companion wakes up after a while and checks on you. */
     val restOn: Boolean = true,
     val restAfter: Int = 30,
     /** Countdown add-on: a deadline shown on the Now page (and optionally on the pet). */
@@ -118,6 +118,8 @@ data class LocalPrefs(
     val showNudges: Boolean = true,
     /** Desktop: the pet's little timer shows the countdown (while resting, or when chosen during a block). */
     val countdownOnPet: Boolean = false,
+    /** Also show "38% left" next to the countdown's name on the pet. */
+    val countdownPercent: Boolean = false,
     /** Size of the floating pet on this device: 0.8 small, 1 regular, 1.2 large. */
     val petSize: Float = 1f,
     /** Desktop, during a block with the countdown on the pet: which one the pet shows ("block" or "countdown"). */

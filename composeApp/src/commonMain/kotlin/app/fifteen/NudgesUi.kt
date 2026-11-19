@@ -194,7 +194,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         Muted("Your companion brings these up in a chat bubble while it's floating on screen. Answer on any device.")
         Spacer(Modifier.height(24.dp))
         AddonCard(
-            "Eye breaks (20-20-20)",
+            "eye", "Eye breaks (20-20-20)",
             "Every ${p.eyeEvery} minutes: look about 6 metres away for 20 seconds. A small timer runs beside your block timer.",
             p.eyeOn, { on -> store.updateProfile { it.copy(eyeOn = on) } }, { store.nudges.begin("eye", "ask") },
         ) {
@@ -207,7 +207,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         }
         Spacer(Modifier.height(18.dp))
         AddonCard(
-            "Water",
+            "water", "Water",
             "A reminder, then a friendly \"did you drink?\" a few minutes later. Say no and it checks back or offers to remind you again.",
             p.waterOn, { on -> store.updateProfile { it.copy(waterOn = on) } }, { store.nudges.begin("water", "remind") },
         ) {
@@ -245,7 +245,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         }
         Spacer(Modifier.height(18.dp))
         AddonCard(
-            "Check-ins",
+            "well", "Check-ins",
             "Every now and then: \"Everything okay? Feeling productive?\" If not, a small idea to reset: a stretch, a walk, some water.",
             p.wellOn, { on -> store.updateProfile { it.copy(wellOn = on) } }, { store.nudges.begin("well", "ask") },
         ) {
@@ -256,7 +256,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         }
         Spacer(Modifier.height(18.dp))
         AddonCard(
-            "While you rest",
+            "rest", "Back-to-it nudge",
             "Only while you rest, never during a block: after a while your sleeping companion wakes up, asks if everything's okay and offers to start a block. It asks at most twice, then lets you be.",
             p.restOn, { on -> store.updateProfile { it.copy(restOn = on) } }, { store.nudges.begin("rest", "ask") },
         ) {
@@ -267,7 +267,7 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
         }
         Spacer(Modifier.height(18.dp))
         AddonCard(
-            "Countdown",
+            "countdown", "Countdown",
             "A deadline that counts down on the Now page: an exam, a launch, a trip. Shows days, hours, minutes and seconds left.",
             p.countdownOn, { on ->
                 store.updateProfile {
@@ -286,24 +286,29 @@ fun AddonsScreen(store: Store, wide: Boolean, platform: PlatformUi) {
 /** The two ticks each reminder add-on has: whether it may come during a block, and while resting. */
 @Composable
 private fun WhenTicks(blocks: Boolean, rest: Boolean, onBlocks: (Boolean) -> Unit, onRest: (Boolean) -> Unit) {
-    Text("Comes", color = Ink.muted, fontSize = 12.sp)
+    Text("This add-on works during", color = Ink.muted, fontSize = 12.sp)
     Spacer(Modifier.height(6.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-        TickBox("During blocks", blocks, onBlocks)
-        TickBox("While resting", rest, onRest)
+        TickBox("Focus blocks", blocks, onBlocks)
+        TickBox("Resting", rest, onRest)
     }
     if (!blocks && !rest) {
         Spacer(Modifier.height(6.dp))
-        Muted("Tick at least one, or it never comes.", size = 12)
+        Muted("Tick at least one, or this add-on won't work.", size = 12)
     }
     Spacer(Modifier.height(14.dp))
 }
 
 @Composable
-private fun AddonCard(title: String, blurb: String, on: Boolean, onToggle: (Boolean) -> Unit, onTry: (() -> Unit)?, settings: @Composable () -> Unit) {
+private fun AddonCard(icon: String, title: String, blurb: String, on: Boolean, onToggle: (Boolean) -> Unit, onTry: (() -> Unit)?, settings: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column {
-            Toggle(title, on, blurb, onToggle)
+            // The add-on's little picture, drawn like the pets, beside its title and switch.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AddonIcon(icon, Modifier.size(34.dp))
+                Spacer(Modifier.width(14.dp))
+                Box(Modifier.weight(1f)) { Toggle(title, on, blurb, onToggle) }
+            }
             if (on) {
                 Spacer(Modifier.height(12.dp))
                 settings()

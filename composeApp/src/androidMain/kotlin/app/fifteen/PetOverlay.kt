@@ -21,6 +21,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -128,6 +129,7 @@ class PetOverlay(private val ctx: Context, private val store: Store) {
                     PetOverlayContent(
                         store, mirrored.value, menuOpen.value,
                         onOpenApp = { openApp() },
+                        onCheckIn = { openCheckIn(ctx) },
                         onMenu = { menuOpen.value = it },
                         menuItems = { menuItems() },
                     )
@@ -199,6 +201,13 @@ class PetOverlay(private val ctx: Context, private val store: Store) {
                     Phase.Running -> "Switch activity"
                 } to later { openCheckIn(ctx) },
             )
+            val prefs = store.prefs.value
+            if (phase == Phase.Running && prefs.countdownOnPet && countdownActive(store.db.value.profile)) {
+                val showing = prefs.petTimer == "countdown"
+                add((if (showing) "Show block timer" else "Show countdown") to later {
+                    store.updatePrefs { it.copy(petTimer = if (showing) "block" else "countdown") }
+                })
+            }
             add(HIDE_LABEL to later { store.hidePet() })
             add("Open Fifteen" to later { openApp() })
             if (phase == Phase.Idle) add("Quit" to later { turnOff(ctx) })
@@ -408,6 +417,7 @@ private fun PetOverlayContent(
     mirrored: Boolean,
     menuOpen: Boolean,
     onOpenApp: () -> Unit,
+    onCheckIn: () -> Unit,
     onMenu: (Boolean) -> Unit,
     menuItems: () -> List<Pair<String, () -> Unit>>,
 ) {
@@ -442,12 +452,29 @@ private fun PetOverlayContent(
                 }
                 PetView(v.db.profile.avatar, v.petState(), Modifier.size((58 * v.prefs.petSize.coerceIn(0.6f, 1.5f)).dp), interactive = false, poke = poke)
             }
-            if (v.phase != Phase.Idle) {
+            // The countdown add-on under the pet: while resting, or during a block when chosen (long-press menu).
+            val countdown = prefs.countdownOnPet && countdownActive(v.db.profile) &&
+                (v.phase == Phase.Idle || (v.phase == Phase.Running && prefs.petTimer == "countdown"))
+            val left = v.db.profile.countdownAt - v.now
+            if (v.phase != Phase.Idle || countdown) {
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    if (v.phase == Phase.Due) "check in" else "${(v.remaining / 60_000L + 1).coerceAtLeast(0)}m",
-                    color = if (v.phase == Phase.Due) Ink.mellow else Ink.text, fontSize = 11.sp, fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xE6121318)).padding(horizontal = 7.dp, vertical = 1.dp),
+                    when {
+                        countdown -> if (left > 0) countdownShort(left) else "time's up"
+                        v.phase == Phase.Due -> "check in"
+                        else -> "${(v.remaining / 60_000L + 1).coerceAtLeast(0)}m"
+                    },
+                    color = if (v.phase == Phase.Due || (countdown && left <= 0)) Ink.mellow else Ink.text, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(Color(0xE6121318))
+                        // The countdown's soft fill drains inside the pill: green → yellow → coral.
+                        .then(if (!countdown) Modifier else Modifier.drawBehind {
+                            val f = countdownFraction(v.db.profile, v.now)
+                            if (f > 0f) drawRoundRect(countdownColor(f).copy(alpha = 0.32f), size = androidx.compose.ui.geometry.Size(size.width * f, size.height),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(minOf(size.height / 2, size.width * f / 2)))
+                        })
+                        // "check in" opens the check-in straight away.
+                        .then(if (v.phase == Phase.Due && !countdown) Modifier.clickable { onCheckIn() } else Modifier)
+                        .padding(horizontal = 7.dp, vertical = 1.dp),
                 )
             }
         }

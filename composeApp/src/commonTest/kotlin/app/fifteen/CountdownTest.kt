@@ -30,6 +30,17 @@ class CountdownTest {
     }
 
     @Test
+    fun theBarIsNearlyEmptyWhenOnlyHoursAreLeft() {
+        val now = 100 * d
+        // Set a minute ago for 3 hours from now: measured over a day, so about an eighth is left, not 98%.
+        val tonight = Profile(countdownAt = now + 3 * h, countdownFrom = now - m)
+        assertEquals(0.125f, countdownFraction(tonight, now), 0.001f)
+        // A countdown set 9 days ahead is measured from when it was set.
+        val exam = Profile(countdownAt = now + 3 * d, countdownFrom = now - 6 * d)
+        assertEquals(1f / 3, countdownFraction(exam, now), 0.001f)
+    }
+
+    @Test
     fun itOnlyShowsWhenOnWithADate() {
         val p = Profile(addons = true)
         assertFalse(countdownActive(p))

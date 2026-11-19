@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+﻿import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import java.util.Properties
 
@@ -94,8 +94,8 @@ android {
         applicationId = "app.fifteen"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.1.1"
     }
     signingConfigs {
         localProps.getProperty("release.storeFile")?.let { path ->
@@ -128,7 +128,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Fifteen"
-            packageVersion = "1.1.0"
+            packageVersion = "1.1.1"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             // A small app: a capped heap and the simple collector keep memory low and give it back to Windows.
             // TieredStopAtLevel=1 keeps only the light compiler: measured about 40% less start-up CPU
