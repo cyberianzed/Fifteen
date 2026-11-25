@@ -587,9 +587,14 @@ private class RingPainter(val progress: Float, val color: Color, val phase: Phas
     }
 }
 
-/** %APPDATA%\Fifteen. The app used to be called Nimisham: its files move over once, on first start. */
+/**
+ * %APPDATA%\Fifteen on Windows, ~/.local/share/Fifteen (or $XDG_DATA_HOME) on Linux. The app used to be called
+ * Nimisham: its files move over once, on first start.
+ */
 private fun dataDir(): File {
-    val base = File(System.getenv("APPDATA") ?: System.getProperty("user.home"))
+    val base = System.getenv("APPDATA")?.let(::File)
+        ?: System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() }?.let(::File)
+        ?: File(System.getProperty("user.home"), ".local/share")
     val dir = File(base, "Fifteen")
     val old = File(base, "Nimisham")
     if (!File(dir, "db.json").exists() && File(old, "db.json").exists()) {

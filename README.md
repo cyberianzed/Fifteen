@@ -7,7 +7,7 @@
 Every 15 minutes it asks one question: *how did that go?* Tap a rating, pick what's next, and keep going.
 No guilt, no lost points, just a little companion (Tree, Clouda or Hunter) cheering you on.
 
-[**Download for Windows and Android →**](../../releases/latest) &nbsp;·&nbsp; [**Website**](https://cyberianzed.github.io/Fifteen/) &nbsp;·&nbsp; [**Support this project 💛**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project)
+[**Download for Windows, Android and Linux →**](../../releases/latest) &nbsp;·&nbsp; [**Website**](https://cyberianzed.github.io/Fifteen/) &nbsp;·&nbsp; [**Support this project 💛**](https://t.me/the_jkj?text=I%20want%20to%20support%20this%20project)
 
 <img src="docs/screenshots/app-now.png" alt="Fifteen main screen" width="860">
 
@@ -126,6 +126,7 @@ Go to [**Releases**](../../releases/latest) and download:
 - **Windows:** `Fifteen-Setup.exe`. Run it and follow the steps (no admin needed). Prefer no installer? Download `Fifteen-windows.zip`, **extract it first** (right-click → *Extract All…*), and run `Fifteen.exe` from the extracted folder.
   If Windows shows *"Windows protected your PC"*, click **More info → Run anyway**.
 - **Android:** `Fifteen.apk`. Open it on your phone and allow installing from your browser or files app.
+- **Linux (Debian, Ubuntu):** `Fifteen-linux-amd64.deb`. Install it with `sudo apt install ./Fifteen-linux-amd64.deb`, then open Fifteen from your apps menu.
 
 On the phone, allow **display over other apps** when asked, so your pet can float. If the timer or pet ever stops by itself, open the **Keep it running** box at the bottom of Settings and tap **Allow background running**. On Xiaomi, Oppo, Vivo, Realme or Samsung, also turn on *Autostart* and *No restrictions* in the phone's app settings.
 

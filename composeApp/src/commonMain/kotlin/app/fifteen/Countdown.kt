@@ -65,13 +65,11 @@ fun defaultCountdownAt(now: Long): Long {
 }
 
 /**
- * How much of the countdown's time is left, 1 → 0. Measured over at least a full day, so a deadline tonight
- * shows how little of the day is left (3 hours left ≈ 12%), not "98%" just because it was set a minute ago.
- * Longer countdowns are measured from when they were set.
+ * How much of the countdown's time is left, 1 → 0: 100% when it was set, 0% at the deadline, whatever the length
+ * (an hour, a day, a month). Older countdowns without a set time are measured over the day before.
  */
 fun countdownFraction(p: Profile, now: Long): Float {
-    val dayBefore = p.countdownAt - 86_400_000L
-    val from = if (p.countdownFrom in 1 until p.countdownAt) minOf(p.countdownFrom, dayBefore) else dayBefore
+    val from = if (p.countdownFrom in 1 until p.countdownAt) p.countdownFrom else p.countdownAt - 86_400_000L
     val span = (p.countdownAt - from).coerceAtLeast(1)
     return ((p.countdownAt - now).toFloat() / span).coerceIn(0f, 1f)
 }
@@ -162,7 +160,8 @@ fun CountdownSettings(store: Store, v: View, platform: PlatformUi) {
     var name by remember(p.countdownName) { mutableStateOf(p.countdownName) }
     var pickDate by remember { mutableStateOf(false) }
     var pickTime by remember { mutableStateOf(false) }
-    val at = if (p.countdownAt > 0) p.countdownAt else defaultCountdownAt(v.now)
+    // A countdown that has finished starts over from today (11 pm), not its old date.
+    val at = if (p.countdownAt > v.now) p.countdownAt else defaultCountdownAt(v.now)
     val day = epochDay(at)
     val minute = minuteOfDay(at)
     fun save(newDay: Int = day, newMinute: Int = minute) =

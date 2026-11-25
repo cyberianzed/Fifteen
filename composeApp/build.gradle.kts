@@ -94,8 +94,8 @@ android {
         applicationId = "app.fifteen"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.1.1"
+        versionCode = 5
+        versionName = "1.1.2"
     }
     signingConfigs {
         localProps.getProperty("release.storeFile")?.let { path ->
@@ -126,9 +126,10 @@ compose.desktop {
     application {
         mainClass = "app.fifteen.DesktopMainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Msi)
+            // Msi on Windows; Deb is built on Linux (GitHub Actions, .github/workflows/linux-deb.yml).
+            targetFormats(TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Fifteen"
-            packageVersion = "1.1.1"
+            packageVersion = "1.1.2"
             modules("java.prefs", "java.net.http", "jdk.crypto.ec", "jdk.unsupported")
             // A small app: a capped heap and the simple collector keep memory low and give it back to Windows.
             // TieredStopAtLevel=1 keeps only the light compiler: measured about 40% less start-up CPU
@@ -143,6 +144,12 @@ compose.desktop {
                 perUserInstall = true
                 menuGroup = "Fifteen"
                 upgradeUuid = "8E1C4B6A-2D3F-4A9B-B7C1-5F0E9D2A6C38"
+            }
+            linux {
+                packageName = "fifteen"
+                menuGroup = "Utility"
+                appCategory = "Utility"
+                shortcut = true
             }
             description = "Fifteen-minute focus tracker"
             vendor = "Personal Project"
