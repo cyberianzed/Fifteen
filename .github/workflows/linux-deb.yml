@@ -28,7 +28,7 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build the .deb (public build: no Supabase keys inside)
+      - name: "Build the .deb (public build, no Supabase keys inside)"
         run: |
           chmod +x gradlew
           ./gradlew :composeApp:packageDeb "-Pfifteen.public=true" --no-daemon
